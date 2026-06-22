@@ -1315,7 +1315,13 @@ function showPage(id,el){
   if(id==='team')loadTeamView();
   if(id==='weekly')loadWeekly();
   if(id==='leaderboard')loadLeaderboard();
-  if(id==='history')loadHistory();
+  if(id==='history'){
+    if(!currentUser){
+      document.getElementById('history-tbody').innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">🔒</div><div class="empty-state-title">Not signed in</div><div class="empty-state-sub">Please sign in to view your history.</div></div></td></tr>';
+    } else {
+      loadHistory();
+    }
+  }
   if(id==='epic-comparison')loadEpicDevelopers();
   if(id==='settings')loadSettings();
   if(id==='add-issue')renderIssueForm();
@@ -1398,7 +1404,7 @@ Record
  
 <div class="field">
 <label>Ticket Closed <span class="req-star">*</span></label>
-<input type="number" class="r-tickets" value="0">
+<input type="number" class="r-tickets" placeholder="0" min="0">
 </div>
 </div>
  
@@ -1406,17 +1412,17 @@ Record
  
 <div class="field">
 <label>Tokens Used <span class="req-star">*</span></label>
-<input type="number" class="r-tokens" value="0">
+<input type="number" class="r-tokens" placeholder="0" min="0">
 </div>
  
 <div class="field">
 <label>Dollars Used <span class="req-star">*</span></label>
-<input type="number" class="r-dollars" value="0">
+<input type="number" class="r-dollars" placeholder="0" min="0" step="0.0001">
 </div>
  
 <div class="field">
 <label>Hours Worked <span class="req-star">*</span></label>
-<input type="number" class="r-hours" value="0">
+<input type="number" class="r-hours" placeholder="0" min="0" step="0.5">
 </div>
  
  
@@ -1425,7 +1431,7 @@ Record
 <input
     type="number"
     class="r-manual-hours"
-    value="0"
+    placeholder="0"
     step="0.5"
     min="0">
 </div>
@@ -1437,27 +1443,27 @@ Record
  
 <div class="field">
 <label>No. of Lines Coded <span class="req-star">*</span></label>
-<input type="number" class="r-lines-coded" value="0">
+<input type="number" class="r-lines-coded" placeholder="0" min="0">
 </div>
  
 <div class="field">
 <label>PRs Raised <span class="req-star">*</span></label>
-<input type="number" class="r-prs-raised" value="0">
+<input type="number" class="r-prs-raised" placeholder="0" min="0">
 </div>
  
 <div class="field">
 <label>PRs Merged <span class="req-star">*</span></label>
-<input type="number" class="r-prs" value="0">
+<input type="number" class="r-prs" placeholder="0" min="0">
 </div>
  
 <div class="field">
 <label>AI Prompts Count <span class="req-star">*</span></label>
-<input type="number" class="r-prompts" value="0">
+<input type="number" class="r-prompts" placeholder="0" min="0">
 </div>
  
 <div class="field">
 <label>Ticket Reopened <span class="req-star">*</span></label>
-<input type="number" class="r-reopened" value="0">
+<input type="number" class="r-reopened" placeholder="0" min="0">
 </div>
  
 </div>
@@ -2709,8 +2715,9 @@ async function loadHistory(){
   try{
     // Normal users only see their own logs; admins see all
     let query = TABLE+'?order=log_date.desc,developer_name.asc&limit=200';
-    if(!isAdmin && currentProfile?.full_name){
-      query = TABLE+'?developer_name=eq.'+encodeURIComponent(currentProfile.full_name)+'&order=log_date.desc&limit=200';
+    const userName = currentProfile?.full_name || currentUser?.user_metadata?.full_name;
+    if(!isAdmin && userName){
+      query = TABLE+'?developer_name=eq.'+encodeURIComponent(userName)+'&order=log_date.desc&limit=200';
     }
     const rows=await sbFetch(query,{headers:{'Prefer':'return=representation'}});
     if(!rows||rows.length===0){tbody.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">No logs yet</div><div class="empty-state-sub">Submit your first daily log to see your history here.</div></div></td></tr>';return;}
@@ -2720,7 +2727,7 @@ async function loadHistory(){
       return`<tr><td class="mono">${r.log_date}</td><td class="dev-name">${r.developer_name}</td><td>${r.domain?`<span class="dtag ${domainClass(r.domain)}">${r.domain}</span>`:'—'}</td><td class="mono">${r.ticket_closed||0}</td><td class="mono">${((r.tokens_used||0)/1000).toFixed(1)}K</td><td class="mono">$${cost.toFixed(3)}</td><td class="mono">${r.prs_merged||0}</td><td class="mono">${r.ticket_reopened||0}</td><td style="color:${qf>=90?'var(--green)':'var(--amber)'};font-family:'Roboto',sans-serif;font-size:12px">${qf}%</td><td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.notes||''}">${r.notes||'—'}</td></tr>`;
     }).join('');
   }catch(e){
-    tbody.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">No logs yet</div><div class="empty-state-sub">Submit your first daily log to see your history here.</div></div></td></tr>';
+    tbody.innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-title">Could not load history</div><div class="empty-state-sub">${e.message}</div></div></td></tr>`;
   }
   finally{loading(false);}
 }
