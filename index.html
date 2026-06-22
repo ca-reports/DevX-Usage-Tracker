@@ -168,6 +168,7 @@ html[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator{f
 .form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;}
 .field{display:flex;flex-direction:column;gap:6px;}
 .field label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);}
+.req-star{color:var(--red);}
 .field input,.field select,.field textarea{padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Roboto',sans-serif;font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s;}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(64,166,139,.08);}
 .field select{cursor:pointer;}
@@ -433,36 +434,36 @@ select[multiple] option{padding-left:10px;}
       <div class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</div>
     </div>
     <!-- LOGIN FORM -->
-    <div id="auth-login-form">
-      <div class="auth-field"><label>Email</label><input type="email" id="login-email" placeholder="you@company.com" autocomplete="email"></div>
+    <form id="auth-login-form" autocomplete="on" onsubmit="event.preventDefault(); doLogin(); return false;">
+      <div class="auth-field"><label>Email</label><input type="email" id="login-email" name="username" placeholder="you@company.com" autocomplete="username"></div>
       <div class="auth-field"><label>Password</label>
         <div class="auth-password-wrap">
-          <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+          <input type="password" id="login-password" name="current-password" placeholder="••••••••" autocomplete="current-password">
           <button type="button" class="auth-password-toggle" id="login-password-toggle" onclick="togglePasswordVisibility('login-password')" aria-label="Show password">
             <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
             <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 5c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
           </button>
         </div>
       </div>
-      <button class="auth-btn" id="login-btn" onclick="doLogin()">Sign In</button>
+      <button class="auth-btn" id="login-btn" type="submit">Sign In</button>
       <div class="auth-msg" id="login-msg"></div>
-    </div>
+    </form>
     <!-- SIGNUP FORM -->
-    <div id="auth-signup-form" style="display:none;">
-      <div class="auth-field"><label>Full Name</label><input type="text" id="signup-name" placeholder="Your full name"></div>
-      <div class="auth-field"><label>Email</label><input type="email" id="signup-email" placeholder="you@company.com" autocomplete="email"></div>
+    <form id="auth-signup-form" style="display:none;" autocomplete="on" onsubmit="event.preventDefault(); doSignup(); return false;">
+      <div class="auth-field"><label>Full Name</label><input type="text" id="signup-name" name="name" placeholder="Your full name" autocomplete="name"></div>
+      <div class="auth-field"><label>Email</label><input type="email" id="signup-email" name="email" placeholder="you@company.com" autocomplete="email"></div>
       <div class="auth-field"><label>Password</label>
         <div class="auth-password-wrap">
-          <input type="password" id="signup-password" placeholder="Min 6 characters" autocomplete="new-password">
+          <input type="password" id="signup-password" name="new-password" placeholder="Min 6 characters" autocomplete="new-password">
           <button type="button" class="auth-password-toggle" id="signup-password-toggle" onclick="togglePasswordVisibility('signup-password')" aria-label="Show password">
             <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
             <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 5c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
           </button>
         </div>
       </div>
-      <button class="auth-btn" id="signup-btn" onclick="doSignup()">Create Account</button>
+      <button class="auth-btn" id="signup-btn" type="submit">Create Account</button>
       <div class="auth-msg" id="signup-msg"></div>
-    </div>
+    </form>
   </div>
 </div>
 
@@ -1008,7 +1009,14 @@ const SUPABASE_URL='https://lnksjijdqyctuwbwlsou.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxua3NqaWpkcXljdHV3Yndsc291Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NDM0NzQsImV4cCI6MjA5NjMxOTQ3NH0.yfSZ5mTpIyDaMiXhA3wSlBamGXfZKUDIOT16tXqXwYI';
 
 // Initialise Supabase client (from CDN)
-const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storageKey: 'devx-auth-token'
+  }
+});
 
 /* ── Global auth state ─────────────────────────────────────────── */
 let currentUser   = null;   // Supabase auth user object
@@ -1186,30 +1194,20 @@ function setLogMyDayName(fullName){
   });
 })();
 
-/* ── Allow Enter key in auth forms ─────────────────────────────── */
-document.addEventListener('keydown', e=>{
-  if(e.key!=='Enter') return;
-  const overlay = document.getElementById('auth-overlay');
-  if(overlay.style.display==='none') return;
-  const loginForm = document.getElementById('auth-login-form');
-  if(loginForm.style.display!=='none') doLogin();
-  else doSignup();
-});
-
 </script>
 <script>
 const TABLE='devx_daily_usage_tracker';
 const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
  
 function getSettings(){
-
+  let cost, target;
+  try{ cost = parseFloat(localStorage.getItem('devx_cost')); }catch(e){ cost = NaN; }
+  try{ target = parseFloat(localStorage.getItem('devx_target')); }catch(e){ target = NaN; }
   return {
 
-    costPer1K:
-      parseFloat(localStorage.getItem('devx_cost')) || 0.015,
+    costPer1K: cost || 0.015,
 
-    targetCPT:
-      parseFloat(localStorage.getItem('devx_target')) || 0.050
+    targetCPT: target || 0.050
 
   };
 }
@@ -1327,11 +1325,7 @@ renderComparisonTableHead();
 document.getElementById('today-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'short',year:'numeric'});
 document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
  
-let recordCount = 0;
- 
 function addRecord(){
- 
-recordCount++;
  
 const html = `
 <div class="record-card"
@@ -1342,13 +1336,13 @@ border-radius:12px;
 margin-bottom:20px;
 ">
  
-<h3 style="margin-bottom:15px;color:var(--cyan)">
-Record #${recordCount}
+<h3 class="record-card-title" style="margin-bottom:15px;color:var(--cyan)">
+Record
 </h3>
  
 <div class="form-grid">
 <div class="field">
-<label>Domain</label>
+<label>Domain <span class="req-star">*</span></label>
 <select class="r-domain">
 <option value="">Select</option>
 <option>Frontend</option>
@@ -1362,7 +1356,7 @@ Record #${recordCount}
 </div>
  
 <div class="field">
-<label>Ticket Type</label>
+<label>Ticket Type <span class="req-star">*</span></label>
 <select class="r-ticket-type">
 <option value="">Select</option>
 <option>Feature</option>
@@ -1375,17 +1369,17 @@ Record #${recordCount}
  
 <div class="form-grid">
 <div class="field">
-<label>Epic</label>
+<label>Epic <span class="req-star">*</span></label>
 <input type="text" class="r-epic" placeholder="Epic number">
 </div>
 
 <div class="field">
-<label>Ticket Number</label>
+<label>Ticket Number <span class="req-star">*</span></label>
 <input class="r-ticket-number">
 </div>
  
 <div class="field">
-<label>Ticket Status</label>
+<label>Ticket Status <span class="req-star">*</span></label>
 <select class="r-ticket-status">
     <option value="">Select status</option>
     <option>Backlog</option>
@@ -1403,7 +1397,7 @@ Record #${recordCount}
 </div>
  
 <div class="field">
-<label>Ticket Closed</label>
+<label>Ticket Closed <span class="req-star">*</span></label>
 <input type="number" class="r-tickets" value="0">
 </div>
 </div>
@@ -1411,23 +1405,23 @@ Record #${recordCount}
 <div class="form-grid-3">
  
 <div class="field">
-<label>Tokens Used</label>
+<label>Tokens Used <span class="req-star">*</span></label>
 <input type="number" class="r-tokens" value="0">
 </div>
  
 <div class="field">
-<label>Dollars Used</label>
+<label>Dollars Used <span class="req-star">*</span></label>
 <input type="number" class="r-dollars" value="0">
 </div>
  
 <div class="field">
-<label>Hours Worked</label>
+<label>Hours Worked <span class="req-star">*</span></label>
 <input type="number" class="r-hours" value="0">
 </div>
  
  
 <div class="field">
-<label>Manual Estimated Hours (Without DevX)</label>
+<label>Manual Estimated Hours (Without DevX) <span class="req-star">*</span></label>
 <input
     type="number"
     class="r-manual-hours"
@@ -1442,35 +1436,40 @@ Record #${recordCount}
 <div class="form-grid-3">
  
 <div class="field">
-<label>Ticket Reopened</label>
-<input type="number" class="r-reopened" value="0">
+<label>No. of Lines Coded <span class="req-star">*</span></label>
+<input type="number" class="r-lines-coded" value="0">
 </div>
  
 <div class="field">
-<label>PRs Raised</label>
+<label>PRs Raised <span class="req-star">*</span></label>
 <input type="number" class="r-prs-raised" value="0">
 </div>
  
 <div class="field">
-<label>PRs Merged</label>
+<label>PRs Merged <span class="req-star">*</span></label>
 <input type="number" class="r-prs" value="0">
 </div>
  
 <div class="field">
-<label>AI Prompts Count</label>
+<label>AI Prompts Count <span class="req-star">*</span></label>
 <input type="number" class="r-prompts" value="0">
+</div>
+ 
+<div class="field">
+<label>Ticket Reopened <span class="req-star">*</span></label>
+<input type="number" class="r-reopened" value="0">
 </div>
  
 </div>
  
 <div class="field">
-<label>Notes</label>
+<label>Notes <span class="req-star r-notes-star" style="display:none">*</span> <span class="r-notes-hint" style="font-weight:400;color:var(--text-faint);font-size:11px">(required when status is Reopened or Blocked)</span></label>
 <textarea class="r-notes"></textarea>
 </div>
  
 <button
 class="btn secondary"
-onclick="this.parentElement.remove()"
+onclick="this.parentElement.remove(); renumberRecords(); saveLogDraft();"
 >
 🗑 Remove
 </button>
@@ -1481,8 +1480,94 @@ onclick="this.parentElement.remove()"
 document
 .getElementById("records-container")
 .insertAdjacentHTML("beforeend",html);
+
+// Wire up: when ticket status changes to Reopened/Blocked, mark Notes as required visually
+const newCard=document.getElementById("records-container").lastElementChild;
+const statusSelect=newCard.querySelector('.r-ticket-status');
+const notesStar=newCard.querySelector('.r-notes-star');
+statusSelect.addEventListener('change',()=>{
+  const s=statusSelect.value.toLowerCase();
+  notesStar.style.display=(s==='reopened'||s==='blocked')?'':'none';
+});
+ 
+renumberRecords();
+saveLogDraft();
  
 }
+
+function renumberRecords(){
+  document.querySelectorAll('.record-card-title').forEach((title,idx)=>{
+    title.textContent='Record #'+(idx+1);
+  });
+}
+
+/* ── Draft autosave for the Log My Day form ──────────────────────
+   Keeps in-progress (unsaved) record entries from being lost on a
+   page refresh. Saved locally to this browser only — cleared once
+   the log is successfully submitted.                              */
+const LOG_DRAFT_KEY='devx-log-draft';
+const LOG_DRAFT_FIELDS=[
+  ['r-domain','domain'],['r-ticket-type','ticketType'],['r-epic','epic'],
+  ['r-ticket-number','ticketNumber'],['r-ticket-status','ticketStatus'],
+  ['r-tickets','tickets'],['r-tokens','tokens'],['r-dollars','dollars'],
+  ['r-hours','hours'],['r-manual-hours','manualHours'],['r-lines-coded','linesCoded'],
+  ['r-prs-raised','prsRaised'],['r-prs','prs'],['r-prompts','prompts'],
+  ['r-reopened','reopened'],['r-notes','notes']
+];
+
+let _logDraftTimer=null;
+function saveLogDraft(){
+  clearTimeout(_logDraftTimer);
+  _logDraftTimer=setTimeout(()=>{
+    try{
+      const cards=document.querySelectorAll('.record-card');
+      const dateEl=document.getElementById('f-date');
+      if(!cards.length){ localStorage.removeItem(LOG_DRAFT_KEY); return; }
+      const records=Array.from(cards).map(card=>{
+        const rec={};
+        LOG_DRAFT_FIELDS.forEach(([cls,key])=>{
+          const el=card.querySelector('.'+cls);
+          if(el) rec[key]=el.value;
+        });
+        return rec;
+      });
+      localStorage.setItem(LOG_DRAFT_KEY, JSON.stringify({date:dateEl?dateEl.value:'', records}));
+    }catch(e){}
+  },250);
+}
+
+function clearLogDraft(){
+  try{ localStorage.removeItem(LOG_DRAFT_KEY); }catch(e){}
+}
+
+function restoreLogDraft(){
+  let draft=null;
+  try{
+    const raw=localStorage.getItem(LOG_DRAFT_KEY);
+    if(raw) draft=JSON.parse(raw);
+  }catch(e){}
+  if(!draft || !Array.isArray(draft.records) || !draft.records.length) return;
+
+  const dateEl=document.getElementById('f-date');
+  if(dateEl && draft.date) dateEl.value=draft.date;
+
+  draft.records.forEach(rec=>{
+    addRecord();
+    const card=document.getElementById('records-container').lastElementChild;
+    LOG_DRAFT_FIELDS.forEach(([cls,key])=>{
+      const el=card.querySelector('.'+cls);
+      if(el && rec[key]!==undefined) el.value=rec[key];
+    });
+    const statusSelect=card.querySelector('.r-ticket-status');
+    if(statusSelect) statusSelect.dispatchEvent(new Event('change'));
+  });
+}
+
+// Restore any unsaved draft, then keep autosaving as the user edits
+restoreLogDraft();
+document.getElementById('records-container').addEventListener('input', saveLogDraft);
+document.getElementById('records-container').addEventListener('change', saveLogDraft);
+document.getElementById('f-date').addEventListener('change', saveLogDraft);
  
 async function submitLog(){
  
@@ -1504,6 +1589,42 @@ if(cards.length===0){
 statusEl.className='status-msg err';
 statusEl.textContent='Add at least one record';
 return;
+}
+
+if(!date){
+statusEl.className='status-msg err';
+statusEl.textContent='Select a log date';
+return;
+}
+
+// Validate required fields on every record card before saving anything
+for(let i=0;i<cards.length;i++){
+  const card=cards[i];
+  const n=i+1;
+  const val=sel=>card.querySelector(sel).value.trim();
+
+  if(!val('.r-domain')){statusEl.className='status-msg err';statusEl.textContent='Record #'+n+': select a domain';return;}
+  if(!val('.r-ticket-type')){statusEl.className='status-msg err';statusEl.textContent='Record #'+n+': select a ticket type';return;}
+  if(!val('.r-epic')){statusEl.className='status-msg err';statusEl.textContent='Record #'+n+': enter the epic number';return;}
+  if(!val('.r-ticket-number')){statusEl.className='status-msg err';statusEl.textContent='Record #'+n+': enter the ticket number';return;}
+  if(!val('.r-ticket-status')){statusEl.className='status-msg err';statusEl.textContent='Record #'+n+': select a ticket status';return;}
+  if(!val('.r-tickets')){statusEl.className='status-msg err';statusEl.textContent='Record #'+n+': enter tickets closed';return;}
+  if(!val('.r-tokens')){statusEl.className='status-msg err';statusEl.textContent='Record #'+n+': enter tokens used';return;}
+  if(!val('.r-dollars')){statusEl.className='status-msg err';statusEl.textContent='Record #'+n+': enter dollars used';return;}
+  if(!val('.r-hours')){statusEl.className='status-msg err';statusEl.textContent='Record #'+n+': enter hours worked';return;}
+  if(!val('.r-manual-hours')){statusEl.className='status-msg err';statusEl.textContent='Record #'+n+': enter manual estimated hours';return;}
+  if(!val('.r-lines-coded')){statusEl.className='status-msg err';statusEl.textContent='Record #'+n+': enter no. of lines coded';return;}
+  if(!val('.r-prs-raised')){statusEl.className='status-msg err';statusEl.textContent='Record #'+n+': enter PRs raised';return;}
+  if(!val('.r-prs')){statusEl.className='status-msg err';statusEl.textContent='Record #'+n+': enter PRs merged';return;}
+  if(!val('.r-prompts')){statusEl.className='status-msg err';statusEl.textContent='Record #'+n+': enter AI prompts count';return;}
+  if(!val('.r-reopened')){statusEl.className='status-msg err';statusEl.textContent='Record #'+n+': enter tickets reopened';return;}
+
+  const statusLower=val('.r-ticket-status').toLowerCase();
+  if((statusLower==='reopened'||statusLower==='blocked') && !val('.r-notes')){
+    statusEl.className='status-msg err';
+    statusEl.textContent='Record #'+n+': notes are required when ticket status is Reopened or Blocked';
+    return;
+  }
 }
  
 btn.disabled=true;
@@ -1548,6 +1669,9 @@ parseFloat(card.querySelector('.r-hours').value)||0,
 manual_estimated_hours:
 parseFloat(card.querySelector('.r-manual-hours').value)||0,
  
+lines_coded:
+parseInt(card.querySelector('.r-lines-coded').value)||0,
+ 
 ticket_reopened:
 parseInt(card.querySelector('.r-reopened').value)||0,
  
@@ -1578,6 +1702,7 @@ body:JSON.stringify(payload)
  
 statusEl.className='status-msg ok';
 statusEl.textContent='✓ Saved '+payload.length+' records';
+clearLogDraft();
  
 }
 catch(e){
@@ -2595,7 +2720,6 @@ async function loadHistory(){
       return`<tr><td class="mono">${r.log_date}</td><td class="dev-name">${r.developer_name}</td><td>${r.domain?`<span class="dtag ${domainClass(r.domain)}">${r.domain}</span>`:'—'}</td><td class="mono">${r.ticket_closed||0}</td><td class="mono">${((r.tokens_used||0)/1000).toFixed(1)}K</td><td class="mono">$${cost.toFixed(3)}</td><td class="mono">${r.prs_merged||0}</td><td class="mono">${r.ticket_reopened||0}</td><td style="color:${qf>=90?'var(--green)':'var(--amber)'};font-family:'Roboto',sans-serif;font-size:12px">${qf}%</td><td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.notes||''}">${r.notes||'—'}</td></tr>`;
     }).join('');
   }catch(e){
-    console.error('loadHistory error:',e);
     tbody.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">No logs yet</div><div class="empty-state-sub">Submit your first daily log to see your history here.</div></div></td></tr>';
   }
   finally{loading(false);}
@@ -2632,11 +2756,11 @@ function saveSettings(){
     : null;
 
   if(cost !== null && !isNaN(cost)){
-    localStorage.setItem('devx_cost', cost);
+    try{ localStorage.setItem('devx_cost', cost); }catch(e){}
   }
 
   if(target !== null && !isNaN(target)){
-    localStorage.setItem('devx_target', target);
+    try{ localStorage.setItem('devx_target', target); }catch(e){}
   }
 
   const el = document.getElementById('settings-status');
@@ -2814,7 +2938,7 @@ async function loadEpicDevelopers(){
       select.innerHTML=devNames.map(name=>`<option value="${name}">${name}</option>`).join('');
       attachDeveloperTickHandler(id);
     });
-  }catch(e){console.error('Error loading developers:',e);}
+  }catch(e){}
 }
 
 async function loadEpicComparison(side){
@@ -3175,7 +3299,6 @@ async function loadFeatureAreaOptions(selectId){
       select.insertBefore(opt,otherOpt);
     });
   }catch(e){
-    console.error('Failed to load feature areas:',e);
   }
 }
 
@@ -3193,7 +3316,6 @@ async function loadComparisonFeatureAreas(){
       if(unique.includes(current)) sel.value=current;
     });
   }catch(e){
-    console.error('Failed to load feature areas for comparison:',e);
   }
 }
 
@@ -3404,7 +3526,9 @@ loadSettings();
 loadEpicDevelopers();
 onCompareTypeChange();
 const now=new Date();const monday=new Date(now);monday.setDate(now.getDate()-(now.getDay()===0?6:now.getDay()-1));monday.setHours(0,0,0,0);const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);['epic1-start','epic2-start'].forEach(id=>document.getElementById(id).value=monday.toISOString().split('T')[0]);['epic1-end','epic2-end'].forEach(id=>document.getElementById(id).value=sunday.toISOString().split('T')[0]);
-addRecord();
+if(!document.querySelector('.record-card')){
+  addRecord();
+}
 
 </script>
 </body>
