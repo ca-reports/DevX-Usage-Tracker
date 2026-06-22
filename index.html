@@ -2016,24 +2016,25 @@ let weeklyAllTicketRows=[];
 const TICKET_STATUS_PALETTE={'Backlog':'#e2e8f0','Analysis in progress':'#c7d8ff','Development in progress':'#e9dbff','PR raised':'#fff1c4','Merged in DEV-1':'#cdf7de','Ready for Test':'#c5f0ff','Testing in progress':'#ffd7f5','Blocked':'#ffccdb','Reopened':'#ffe8a8','On Hold':'#d6d6ff','Done':'#bef3c7','Unknown':'#9ca3af'};
 
 function buildTicketStatusPeriods(entries){
-  const sorted=entries.slice().sort((a,b)=>new Date(a.log_date)-new Date(b.log_date));
+  const parseLocalDate=(s)=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);};
+  const sorted=entries.slice().sort((a,b)=>parseLocalDate(a.log_date)-parseLocalDate(b.log_date));
   const periods=[];
   let activeStatus=null,activeDate=null;
   sorted.forEach(entry=>{
     const status=entry.ticket_status||'Unknown';
     if(activeStatus===null){activeStatus=status;activeDate=entry.log_date;return;}
     if(status!==activeStatus){
-      const toDate=new Date(entry.log_date);
-      const days=Math.max(1,Math.round((toDate-new Date(activeDate))/86400000));
+      const toDate=parseLocalDate(entry.log_date);
+      const days=Math.max(1,Math.round((toDate-parseLocalDate(activeDate))/86400000));
       periods.push({status:activeStatus,from:activeDate,to:entry.log_date,days});
       activeStatus=status;activeDate=entry.log_date;
     }
   });
   if(activeStatus!==null){
     const todayDate=new Date();todayDate.setHours(0,0,0,0);
-    const finalTo=activeStatus==='Done'?new Date(activeDate):todayDate;
-    const days=activeStatus==='Done'?1:Math.max(1,Math.round((finalTo-new Date(activeDate))/86400000));
-    const toStr=activeStatus==='Done'?activeDate:finalTo.toISOString().split('T')[0];
+    const finalTo=activeStatus==='Done'?parseLocalDate(activeDate):todayDate;
+    const days=activeStatus==='Done'?1:Math.max(1,Math.round((finalTo-parseLocalDate(activeDate))/86400000));
+    const toStr=activeStatus==='Done'?activeDate:todayDate.toLocaleDateString('en-CA');
     periods.push({status:activeStatus,from:activeDate,to:toStr,days});
   }
   return {periods,sortedEntries:sorted};
@@ -2047,7 +2048,7 @@ function renderTicketInsightAccordion(rows,idPrefix){
     if(!tickets[key]) tickets[key]={ticket_number:key,ticket_type:r.ticket_type||'—',entries:[]};
     tickets[key].entries.push(r);
   });
-  const formatDate=(dateStr)=>{const d=new Date(dateStr);return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});};
+  const formatDate=(dateStr)=>{const [y,m,day]=dateStr.split('-').map(Number);const d=new Date(y,m-1,day);return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});};
   const ticketList=Object.values(tickets).sort((a,b)=>{
     const aLast=Math.max(...a.entries.map(e=>new Date(e.log_date).getTime()));
     const bLast=Math.max(...b.entries.map(e=>new Date(e.log_date).getTime()));
@@ -2058,6 +2059,13 @@ function renderTicketInsightAccordion(rows,idPrefix){
     const currentStatus=sortedEntries[sortedEntries.length-1].ticket_status||'Unknown';
     const ticketId=`${idPrefix}-${i}`;
     const totalDays=statusPeriods.reduce((sum,p)=>sum+p.days,0)||1;
+    // Aggregate hours per status (sum all entries with that status)
+    const hoursByStatus={};
+    ticket.entries.forEach(e=>{
+      const st=e.ticket_status||'Unknown';
+      hoursByStatus[st]=(hoursByStatus[st]||0)+(e.hours_worked||0);
+    });
+    const totalHours=Object.values(hoursByStatus).reduce((s,h)=>s+h,0);
     const segments=statusPeriods.map(p=>{
       const width=Math.max(6,(p.days/totalDays)*100);
       const color=TICKET_STATUS_PALETTE[p.status]||'#9ca3af';
@@ -2072,11 +2080,14 @@ function renderTicketInsightAccordion(rows,idPrefix){
     statusPeriods.forEach(p=>{
       if(!seen.has(p.status)){
         seen.add(p.status);
-        legendEntries.push(`<span class="status-chip"><span class="status-dot" style="background:${TICKET_STATUS_PALETTE[p.status]||'#9ca3af'}"></span>${p.status}</span>`);
+        const hrs=hoursByStatus[p.status]||0;
+        const hrsLabel=hrs>0?` <span style="font-size:11px;font-weight:700;color:var(--cyan);margin-left:4px;">${hrs % 1 === 0 ? hrs : hrs.toFixed(1)}h</span>`:'';
+        legendEntries.push(`<span class="status-chip"><span class="status-dot" style="background:${TICKET_STATUS_PALETTE[p.status]||'#9ca3af'}"></span>${p.status}${hrsLabel}</span>`);
       }
     });
     const devs=[...new Set(ticket.entries.map(e=>e.developer_name).filter(Boolean))];
-    const content=`<div class="ticket-insight-card"><div class="ticket-insight-header"><div class="status-badge">${currentStatus}</div><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div class="type-badge">${ticket.ticket_type}</div>${devs.length?`<span style="font-size:11px;color:var(--text-faint);">${devs.join(', ')}</span>`:''}</div></div><div class="ticket-timeline">${segments}</div><div class="status-legend">${legendEntries.join('')}</div></div>`;
+    const totalHoursLabel=totalHours>0?`<span style="font-size:12px;font-weight:700;color:var(--cyan);background:var(--cyan-dim);border:1px solid var(--border-bright);border-radius:999px;padding:3px 10px;white-space:nowrap;">⏱ ${totalHours % 1 === 0 ? totalHours : totalHours.toFixed(1)}h total</span>`:'';
+    const content=`<div class="ticket-insight-card"><div class="ticket-insight-header"><div class="status-badge">${currentStatus}</div><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div class="type-badge">${ticket.ticket_type}</div>${devs.length?`<span style="font-size:11px;color:var(--text-faint);">${devs.join(', ')}</span>`:''} ${totalHoursLabel}</div></div><div class="ticket-timeline">${segments}</div><div class="status-legend">${legendEntries.join('')}</div></div>`;
     return `<tr><td class="ticket-link" title="Type: ${ticket.ticket_type} | Click to expand" onclick="toggleTicketInsight('${ticketId}')"><strong>${ticket.ticket_number}</strong> <span style="font-size:12px;color:var(--text-faint);">(click to expand)</span></td></tr><tr id="${ticketId}" class="ticket-insight-row hidden"><td>${content}</td></tr>`;
   }).join('');
 }
@@ -2453,7 +2464,7 @@ async function loadDeveloperInsights(){
         const width=Math.max(6,(p.days/totalDays)*100);
         const color=palettes[p.status]||'#9ca3af';
         const percent=Math.round((p.days/totalDays)*100);
-        const formatDate=(dateStr)=>{const d=new Date(dateStr);return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});};
+        const formatDate=(dateStr)=>{const [y,m,day]=dateStr.split('-').map(Number);const d=new Date(y,m-1,day);return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});};
         const fromDate=formatDate(p.from);
         const toDate=formatDate(p.to);
         const dateRange=p.status==='Done'?toDate:`${fromDate} - ${toDate}`;
