@@ -1,0 +1,3408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevX Usage Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#151a21;--surface:#1c222b;--surface2:#262d38;--surface3:#323a47;
+  --border:rgba(64,166,139,0.12);--border-bright:rgba(64,166,139,0.35);
+  --text:#fdfffd;--text-muted:#9fb4c4;--text-faint:#5c7689;
+  --cyan:#40a68b;--cyan-dim:rgba(64,166,139,0.14);--cyan-mid:rgba(64,166,139,0.35);
+  --green:#40a68b;--green-dim:rgba(64,166,139,0.14);
+  --amber:#ffb830;--amber-dim:rgba(255,184,48,0.12);
+  --red:#ff4d6a;--red-dim:rgba(255,77,106,0.12);
+  --purple:#b47dff;--purple-dim:rgba(180,125,255,0.12);
+  --orange:#fb923c;--pink:#f472b6;
+  --radius:10px;--radius-lg:14px;
+}
+html[data-theme="light"]{
+  --bg:#fdfffd;--surface:#ffffff;--surface2:#f3f6f4;--surface3:#e8ece9;
+  --border:rgba(21,26,33,0.10);--border-bright:rgba(64,166,139,0.45);
+  --text:#151a21;--text-muted:#4b5760;--text-faint:#7c8891;
+}
+html[data-theme="light"] body{background:var(--bg);color:var(--text);}
+body{font-family:'Roboto',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.55;letter-spacing:0.01em;word-spacing:0.02em;min-height:100vh;}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--surface)}::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
+.app{display:grid;grid-template-columns:230px 1fr;min-height:100vh;}
+ 
+/* Sidebar */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:hidden;}
+.sidebar::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--cyan),var(--purple),var(--green));background-size:200% 100%;animation:shimmer 3s linear infinite;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid var(--border);}
+.logo-badge{display:inline-flex;align-items:center;gap:8px;background:var(--cyan-dim);border:1px solid var(--border-bright);border-radius:8px;padding:6px 10px;margin-bottom:12px;}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.logo-badge span{font-size:10px;font-weight:700;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;}
+.sidebar-logo h1{font-size:16px;font-weight:700;color:var(--text);line-height:1.2;}
+.sidebar-logo h1 span{color:var(--cyan);}
+.sidebar-logo p{font-size:11px;color:var(--text-faint);margin-top:6px;font-family:'Nunito Sans',sans-serif;font-optical-sizing:auto;font-weight:300;letter-spacing:0.04em;line-height:1.3;}
+.sidebar-logo p em{font-style:italic;font-weight:600;color:var(--cyan);opacity:0.9;font-family:'Nunito Sans',sans-serif;}
+.nav{padding:14px 12px;flex:1;overflow-y:auto;}
+.nav-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);padding:0 8px;margin:12px 0 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);cursor:pointer;font-size:13px;font-weight:500;color:var(--text-muted);transition:all .2s;margin-bottom:2px;position:relative;overflow:hidden;}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{background:var(--cyan-dim);color:var(--cyan);border:1px solid var(--border-bright);}
+.nav-item.active::before{content:'';position:absolute;left:0;top:20%;bottom:20%;width:3px;border-radius:2px;background:var(--cyan);box-shadow:0 0 8px var(--cyan);}
+.nav-item svg{width:15px;height:15px;flex-shrink:0;}
+.nav-badge{margin-left:auto;font-size:10px;font-family:'Roboto',sans-serif;background:var(--surface3);color:var(--cyan);padding:1px 6px;border-radius:10px;}
+.sidebar-footer{padding:14px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--text-faint);font-family:'Roboto',sans-serif;display:flex;flex-direction:column;gap:8px;}
+.theme-toggle{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--cyan);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0;}
+.theme-toggle:hover{background:var(--cyan-dim);border-color:var(--border-bright);}
+.theme-toggle svg{width:15px;height:15px;}
+.sidebar-toggle{width:30px;height:30px;}
+.sidebar.collapsed{width:70px;}
+.app.collapsed{grid-template-columns:70px 1fr;}
+.sidebar.collapsed .sidebar-logo{padding:24px 12px;}
+.sidebar.collapsed .sidebar-logo h1,
+.sidebar.collapsed .sidebar-logo p,
+.sidebar.collapsed .logo-badge span{
+  display:none;
+}
+.sidebar.collapsed .nav-label{
+  display:none;
+}
+.sidebar.collapsed .nav-item{
+  justify-content:center;
+  padding:10px 0;
+  font-size:0;
+  gap:0;
+  position:relative;
+}
+.sidebar.collapsed .nav-item::after{
+  content:attr(data-tooltip);
+  position:absolute;
+  left:calc(100% + 10px);
+  top:50%;
+  transform:translateY(-50%) translateX(-4px);
+  white-space:nowrap;
+  background:var(--surface2);
+  color:var(--text);
+  padding:8px 10px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .2s ease,transform .2s ease;
+  z-index:10;
+  display:none;
+}
+.sidebar.collapsed .nav-item:hover::after{
+  opacity:1;
+  transform:translateY(-50%) translateX(0);
+  display:block;
+}
+.sidebar.collapsed .nav-item .nav-badge{
+  display:none;
+}
+.sidebar.collapsed .nav-item.active{
+  width:46px;
+  min-width:46px;
+  justify-content:center;
+  margin:0 auto;
+  border-radius:14px;
+}
+.sidebar.collapsed .sidebar-footer{
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
+  row-gap:8px;
+  padding-left:8px;
+  padding-right:8px;
+}
+.sidebar.collapsed .sidebar-footer .sidebar-status-text{
+  display:none;
+}
+html[data-theme="light"] .field input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0) brightness(0.3) contrast(1);}
+html[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0) brightness(0.3) contrast(1);}
+.footer-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);}
+ 
+/* Main */
+.main{padding:28px 32px;overflow-y:auto;background:var(--bg);}
+.main::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:radial-gradient(circle at 1px 1px,rgba(64,166,139,0.03) 1px,transparent 0);background-size:32px 32px;}
+.main>*{position:relative;z-index:1;}
+.page{display:none;}
+.page.active{display:block;}
+ 
+/* Page header */
+.page-header{margin-bottom:24px;}
+.page-header h2{font-size:24px;font-weight:700;color:var(--text);}
+.page-header h2 span{color:var(--cyan);}
+.page-header p{color:var(--text-muted);margin-top:4px;font-size:13px;}
+.header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
+.date-badge{font-family:'Roboto',sans-serif;font-size:11px;color:var(--cyan);background:var(--cyan-dim);padding:6px 12px;border-radius:20px;border:1px solid var(--border-bright);white-space:nowrap;}
+ 
+/* KPI cards */
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin-bottom:24px;}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;position:relative;overflow:hidden;transition:border-color .2s;}
+.metric-card:hover{border-color:var(--border-bright);}
+.metric-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--surface3);}
+.metric-card.good::after{background:var(--green);box-shadow:0 0 8px var(--green);}
+.metric-card.warn::after{background:var(--amber);}
+.metric-card.cyan::after{background:var(--cyan);box-shadow:0 0 8px var(--cyan);}
+.metric-card .m-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);margin-bottom:8px;}
+.metric-card .m-value{font-size:28px;font-weight:700;font-family:'Roboto',sans-serif;line-height:1;margin-bottom:4px;color:var(--text);}
+.metric-card.good .m-value{color:var(--green);text-shadow:0 0 20px rgba(64,166,139,.3);}
+.metric-card.warn .m-value{color:var(--amber);}
+.metric-card.cyan .m-value{color:var(--cyan);text-shadow:0 0 20px rgba(64,166,139,.3);}
+.metric-card .m-sub{font-size:11px;color:var(--text-faint);font-family:'Roboto',sans-serif;}
+ 
+/* Section */
+.section{margin-bottom:24px;}
+.section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--text-faint);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+ 
+/* Log form */
+.log-form{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;position:relative;overflow:hidden;}
+.log-form::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--cyan),var(--purple));background-size:200% 100%;animation:shimmer 3s linear infinite;}
+.form-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-bottom:16px;}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+.field{display:flex;flex-direction:column;gap:6px;}
+.field label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);}
+.field input,.field select,.field textarea{padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Roboto',sans-serif;font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(64,166,139,.08);}
+.field select{cursor:pointer;}
+.field select option{background:var(--surface2);}
+.field textarea{resize:vertical;min-height:70px;}
+.field input[type="number"]{font-family:'Roboto',sans-serif;}
+/* Calendar icon — white in dark mode, dark in light mode */
+.field input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(2);cursor:pointer;opacity:1;}
+/* Also cover inline date inputs in header bars */
+input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(2);cursor:pointer;opacity:1;}
+ 
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:var(--radius);border:1px solid var(--cyan);background:var(--cyan-dim);color:var(--cyan);font-family:'Roboto',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn:hover{background:var(--cyan);color:var(--bg);box-shadow:0 0 20px rgba(64,166,139,.3);}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.btn.secondary{border-color:var(--border-bright);background:var(--surface2);color:var(--text-muted);}
+.btn.secondary:hover{color:var(--text);background:var(--surface3);box-shadow:none;}
+.btn-row{display:flex;align-items:center;gap:12px;margin-top:20px;flex-wrap:wrap;}
+.status-msg{font-size:12px;font-weight:600;font-family:'Roboto',sans-serif;}
+.status-msg.ok{color:var(--green);}
+.status-msg.err{color:var(--red);}
+.status-msg.loading{color:var(--text-faint);}
+ 
+/* Table */
+.data-table{width:100%;border-collapse:collapse;background:var(--surface);border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);}
+.data-table th{text-align:left;padding:10px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);background:var(--surface2);border-bottom:1px solid var(--border);}
+.data-table td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text-muted);}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table tbody tr{transition:background .15s;}
+.ticket-link{cursor:pointer;color:var(--cyan);}
+.ticket-link:hover{color:var(--text);}
+.ticket-insight-row.hidden{display:none;}
+.ticket-insight-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px;overflow:hidden;}
+.ticket-insight-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;}
+.ticket-insight-header .status-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(64,166,139,0.12);color:var(--cyan);}
+.ticket-insight-header .type-badge{padding:6px 12px;border-radius:999px;font-size:12px;background:rgba(180,125,255,0.12);color:var(--purple);}
+.ticket-timeline{display:flex;height:30px;border-radius:999px;overflow:hidden;margin-bottom:12px;background:var(--surface3);border:1px solid var(--border);}
+.timeline-segment{height:100%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#1a2430;font-weight:700;position:relative;cursor:default;}
+.timeline-segment span{pointer-events:none;}
+.timeline-segment::after{content:attr(data-tooltip);position:absolute;left:50%;transform:translateX(-50%) translateY(-8px);white-space:nowrap;background:rgba(10,16,24,.92);color:#fff;padding:6px 10px;border-radius:10px;opacity:0;visibility:hidden;transition:opacity .2s ease,visibility .2s ease;z-index:2;font-size:11px;}
+.timeline-segment:hover::after{opacity:1;visibility:visible;}
+.status-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;}
+.status-chip{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted);}
+.status-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+.data-table tbody tr:hover td{background:var(--surface2);}
+.mono{font-family:'Roboto',sans-serif;font-size:12px;}
+.dev-name{font-weight:600;color:var(--text);}
+ 
+/* Domain tags */
+.dtag{display:inline-block;font-size:9px;font-weight:700;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.07em;}
+.dtag.frontend{background:rgba(64,166,139,.1);color:var(--cyan);border:1px solid rgba(64,166,139,.2);}
+.dtag.backend{background:var(--green-dim);color:var(--green);border:1px solid rgba(64,166,139,.2);}
+.dtag.fullstack{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(255,184,48,.2);}
+.dtag.python{background:var(--purple-dim);color:var(--purple);border:1px solid rgba(180,125,255,.2);}
+.dtag.java{background:rgba(251,146,60,.12);color:var(--orange);border:1px solid rgba(251,146,60,.2);}
+.dtag.devops{background:rgba(244,114,182,.1);color:var(--pink);border:1px solid rgba(244,114,182,.2);}
+.dtag.qa{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,77,106,.2);}
+ 
+/* Eff bar */
+.eff-wrap{width:70px;height:5px;background:var(--surface3);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;}
+.eff-fill{height:100%;border-radius:3px;}
+.eff-fill.high{background:var(--green);box-shadow:0 0 6px var(--green);}
+.eff-fill.mid{background:var(--amber);}
+.eff-fill.low{background:var(--red);}
+ 
+/* Charts */
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 22px;margin-bottom:16px;transition:border-color .2s;}
+.chart-card:hover{border-color:var(--border-bright);}
+.chart-card h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--text-faint);margin-bottom:16px;}
+.chart-wrap{position:relative;width:100%;height:200px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+ 
+/* Leaderboard */
+.leaderboard{background:transparent;}
+.lb-header{padding:4px 0 16px;display:flex;align-items:center;gap:10px;}
+.lb-header h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);}
+.lb-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+.lb-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;position:relative;overflow:hidden;transition:border-color .2s,transform .15s;cursor:default;}
+.lb-card:hover{border-color:var(--border-bright);transform:translateY(-2px);}
+.lb-card.rank1{border-left:3px solid var(--amber);}
+.lb-card.rank2{border-left:3px solid var(--purple);}
+.lb-card.rank3{border-left:3px solid var(--green);}
+.lb-card-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.lb-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;}
+.lb-card-name{font-weight:700;font-size:13px;color:var(--text);line-height:1.3;}
+.lb-card-email{font-size:10px;color:var(--text-faint);margin-top:1px;}
+.lb-card-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px;}
+.lb-stat-box{display:flex;flex-direction:column;align-items:flex-start;}
+.lb-stat-val{font-size:20px;font-weight:700;font-family:'Roboto',sans-serif;line-height:1.1;}
+.lb-stat-val.total{color:var(--text);}
+.lb-stat-val.active{color:var(--amber);}
+.lb-stat-val.done{color:var(--green);}
+.lb-stat-val.pct{color:var(--cyan);}
+.lb-stat-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-faint);margin-top:2px;}
+.lb-completion-label{font-size:10px;color:var(--text-faint);margin-bottom:5px;}
+.lb-prog-bar{height:5px;border-radius:3px;background:var(--surface3);overflow:hidden;}
+.lb-prog-fill{height:100%;border-radius:3px;transition:width .4s ease;}
+.lb-prog-fill.high{background:var(--green);box-shadow:0 0 6px var(--green);}
+.lb-prog-fill.mid{background:var(--amber);}
+.lb-prog-fill.low{background:var(--red);}
+.lb-rank-badge{position:absolute;top:10px;right:12px;font-size:18px;}
+/* Developer filter pills */
+.dev-filter-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:20px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);}
+.dev-filter-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);white-space:nowrap;margin-right:4px;}
+.dev-pill{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;user-select:none;}
+.dev-pill:hover{border-color:var(--border-bright);color:var(--text);}
+.dev-pill.active{background:var(--cyan-dim);border-color:var(--border-bright);color:var(--cyan);}
+.dev-pill.all-pill{font-weight:600;}
+/* Ticket modal */
+.wl-modal-backdrop{position:fixed;inset:0;background:rgba(10,14,20,.72);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s;}
+.wl-modal-backdrop.open{opacity:1;pointer-events:all;}
+.wl-modal{background:var(--surface);border:1px solid var(--border-bright);border-radius:var(--radius-lg);width:100%;max-width:560px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.5);transform:translateY(16px);transition:transform .2s;}
+.wl-modal-backdrop.open .wl-modal{transform:translateY(0);}
+.wl-modal-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.wl-modal-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;}
+.wl-modal-title{font-size:15px;font-weight:700;color:var(--text);}
+.wl-modal-sub{font-size:11px;color:var(--text-faint);margin-top:2px;}
+.wl-modal-close{margin-left:auto;width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all .15s;flex-shrink:0;}
+.wl-modal-close:hover{background:var(--red-dim);border-color:var(--red);color:var(--red);}
+.wl-modal-body{overflow-y:auto;padding:16px 20px;flex:1;}
+.wl-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.wl-section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.wl-ticket-list{display:flex;flex-direction:column;gap:6px;margin-bottom:18px;}
+.wl-ticket-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);}
+.wl-ticket-id{font-family:'Roboto',sans-serif;font-size:12px;font-weight:600;color:var(--cyan);min-width:100px;}
+.wl-ticket-status{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600;white-space:nowrap;}
+.wl-ticket-date{font-size:10px;color:var(--text-faint);margin-left:auto;white-space:nowrap;}
+.wl-empty{font-size:12px;color:var(--text-faint);padding:16px 0;text-align:center;}
+
+/* keep old vars for anything that may still reference them */
+.lb-col-header{display:none;}
+.lb-row{display:none;}
+.lb-rank{font-size:18px;text-align:center;}
+.lb-dev-name{font-weight:600;font-size:13px;color:var(--text);}
+.lb-dev-sub{font-size:10px;color:var(--text-faint);margin-top:2px;}
+.lb-eff-bar{height:3px;border-radius:2px;background:var(--surface3);overflow:hidden;margin-top:5px;}
+.lb-stat{font-family:'Roboto',sans-serif;font-size:12px;color:var(--text-muted);text-align:right;}
+.lb-stat small{display:block;font-size:9px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.07em;margin-top:1px;}
+ 
+/* Insights */
+.insight{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:var(--radius);background:var(--surface);border:1px solid var(--border);margin-bottom:8px;font-size:13px;transition:border-color .2s,transform .2s;}
+.insight:hover{border-color:var(--border-bright);transform:translateX(3px);}
+.insight-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+.insight p{color:var(--text-muted);line-height:1.55;}
+.insight strong{color:var(--text);font-weight:600;}
+ 
+/* Settings */
+.settings-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:16px;}
+.settings-card h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);margin-bottom:18px;}
+.divider{border:none;border-top:1px solid var(--border);margin:20px 0;}
+.empty{text-align:center;padding:40px 20px;color:var(--text-faint);font-size:13px;font-family:'Roboto',sans-serif;}
+/* Professional empty states */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;gap:14px;text-align:center;width:100%;box-sizing:border-box;}
+.empty-state-icon{width:48px;height:48px;min-width:48px;max-width:48px;flex-shrink:0;border-radius:14px;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;opacity:.7;line-height:1;text-align:center;margin:0 auto;}
+.empty-state-title{font-size:14px;font-weight:600;color:var(--text-muted);text-align:center;width:100%;}
+.empty-state-sub{font-size:12px;color:var(--text-faint);text-align:center;line-height:1.65;max-width:280px;margin:0 auto;box-sizing:border-box;}
+/* Make empty-state center correctly when it's the sole content of a table cell */
+.data-table td:has(> .empty-state),
+.data-table th:has(> .empty-state){padding:0;text-align:center;}
+.data-table td:has(> .empty-state) .empty-state,
+.data-table th:has(> .empty-state) .empty-state{margin:0 auto;}
+/* Make empty-state span full width when placed inside a CSS grid (e.g. lb-cards-grid) */
+.lb-cards-grid > .empty-state{grid-column:1/-1;}
+.loading-bar{height:2px;background:var(--surface2);margin-bottom:20px;display:none;overflow:hidden;}
+.loading-bar.active{display:block;}
+.loading-bar-fill{height:100%;width:35%;background:linear-gradient(90deg,var(--cyan),var(--purple));animation:shimmer 1s linear infinite,slide 1s ease-in-out infinite;}
+@keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}
+
+/* Epic comparison styles */
+.compare-panel{background:linear-gradient(180deg,rgba(64,166,139,0.04),transparent);border:1px solid var(--border);border-radius:14px;padding:18px;}
+.compare-tabs{display:flex;gap:12px;margin:12px 0 18px}
+.compare-tab{padding:10px 14px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);cursor:pointer;font-weight:700;transition:all .2s}
+.compare-tab:hover{background:rgba(64,166,139,0.08);}
+.compare-tab.active{background:rgba(64,166,139,0.16);color:var(--cyan);box-shadow:0 6px 20px rgba(64,166,139,0.10);border:1px solid var(--border-bright)}
+.run-compare-cta{position:absolute;right:28px;top:28px;padding:12px 18px;border-radius:12px;background:transparent;border:1px solid var(--border);color:var(--cyan);font-weight:700;box-shadow:0 6px 18px rgba(64,166,139,0.04)}
+.compare-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;margin-top:8px;position:relative}
+.compare-grid::before{content:'';position:absolute;top:28px;bottom:28px;left:50%;width:1px;background:var(--border);pointer-events:none}
+.compare-section{background:rgba(64,166,139,0.025);border-radius:16px;padding:22px;border:1px solid var(--border);box-shadow:0 24px 60px rgba(0,0,0,0.12);min-width:0;overflow:hidden}
+.compare-section .field{margin-bottom:18px;min-width:0}
+.compare-section .field:last-child{margin-bottom:0}
+.compare-section h3{font-size:16px}
+.compare-section input,.compare-section select{width:100%;max-width:100%;box-sizing:border-box;}
+#epic1-feature-select,#epic2-feature-select{text-overflow:ellipsis;overflow:hidden;white-space:nowrap;}
+#epic1-feature-select option,#epic2-feature-select option{white-space:normal;}
+@media (max-width:900px){.compare-grid{grid-template-columns:minmax(0,1fr);}.compare-grid::before{display:none}}
+.small-note{font-size:12px;color:var(--text-faint);margin-top:8px}
+select[multiple]{min-height:150px;outline:none;}
+select[multiple] option:checked{background:rgba(64,166,139,0.18);color:#40a68b;font-weight:700;}
+select[multiple] option{padding-left:10px;}
+
+/* Add Issue form */
+.issue-fields-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:16px;}
+.issue-fields-grid .field{min-width:0;}
+.issue-fields-grid .field input,.issue-fields-grid .field select,.issue-fields-grid .field textarea{width:100%;max-width:100%;box-sizing:border-box;}
+.issue-fields-grid .field.full-width{grid-column:1/-1;}
+@media (max-width:900px){.issue-fields-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}}
+@media (max-width:600px){.issue-fields-grid{grid-template-columns:minmax(0,1fr);}}
+
+/* ── Auth overlay ───────────────────────────────────────────────── */
+#auth-overlay{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;}
+.auth-card{background:var(--surface);border:1px solid var(--border-bright);border-radius:var(--radius-lg);padding:36px 32px;width:100%;max-width:400px;position:relative;overflow:hidden;}
+.auth-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--cyan),var(--purple),var(--green));background-size:200% 100%;animation:shimmer 3s linear infinite;}
+.auth-logo{display:flex;flex-direction:column;align-items:center;margin-bottom:28px;}
+.auth-logo .logo-badge{margin-bottom:10px;}
+.auth-logo h1{font-size:20px;font-weight:700;color:var(--text);text-align:center;}
+.auth-logo h1 span{color:var(--cyan);}
+.auth-logo p{font-size:13px;color:var(--text-faint);margin-top:6px;font-family:'Nunito Sans',sans-serif;font-optical-sizing:auto;font-weight:300;letter-spacing:0.04em;}
+.auth-logo p em{font-style:italic;font-weight:600;color:var(--cyan);opacity:0.9;font-family:'Nunito Sans',sans-serif;}
+.auth-tabs{display:flex;gap:0;margin-bottom:24px;border-radius:8px;background:var(--surface2);padding:4px;}
+.auth-tab{flex:1;padding:8px;text-align:center;font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;border-radius:6px;transition:all .2s;}
+.auth-tab.active{background:var(--cyan-dim);color:var(--cyan);border:1px solid var(--border-bright);}
+.auth-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.auth-field label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);}
+.auth-field input{padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Roboto',sans-serif;font-size:13px;outline:none;transition:border-color .2s;}
+.auth-field input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(64,166,139,.08);}
+.auth-password-wrap{position:relative;display:flex;}
+.auth-password-wrap input{flex:1;width:100%;padding-right:38px;}
+.auth-password-wrap input[type="password"]::-ms-reveal,.auth-password-wrap input[type="password"]::-ms-clear{display:none;}
+.auth-password-toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:26px;height:26px;border:none;background:transparent;color:var(--text-faint);display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:6px;padding:0;}
+.auth-password-toggle:hover{color:var(--text);background:var(--surface3);}
+.auth-password-toggle svg{width:16px;height:16px;display:block;}
+.auth-password-toggle .icon-eye-off{display:none;}
+.auth-password-toggle.is-visible .icon-eye{display:none;}
+.auth-password-toggle.is-visible .icon-eye-off{display:block;}
+.auth-btn{width:100%;padding:11px;border-radius:8px;border:1px solid var(--cyan);background:var(--cyan-dim);color:var(--cyan);font-family:'Roboto',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:4px;}
+.auth-btn:hover{background:var(--cyan);color:var(--bg);box-shadow:0 0 20px rgba(64,166,139,.3);}
+.auth-btn:disabled{opacity:.4;cursor:not-allowed;}
+.auth-msg{font-size:12px;font-weight:600;margin-top:12px;min-height:18px;text-align:center;}
+.auth-msg.ok{color:var(--green);}
+.auth-msg.err{color:var(--red);}
+
+/* ── User badge in sidebar footer ─────────────────────────────── */
+.user-badge{display:flex;align-items:center;gap:6px;padding:8px 0 4px;min-width:0;}
+.sidebar-footer-controls{display:flex;align-items:center;justify-content:center;margin-top:6px;}
+.footer-btn-group{display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;width:100%;}
+.footer-btn-group .theme-toggle,.footer-btn-group .sidebar-toggle{flex:1;width:auto;height:32px;border:none;border-radius:0;background:transparent;color:var(--text-faint);transition:background .2s,color .2s;display:flex;align-items:center;justify-content:center;}
+.footer-btn-group .sidebar-toggle svg{width:15px;height:15px;}
+.footer-btn-group .theme-toggle:hover,.footer-btn-group .sidebar-toggle:hover{background:var(--cyan-dim);color:var(--cyan);}
+.footer-btn-group .btn-divider{width:1px;height:18px;background:var(--border);flex-shrink:0;}
+.sidebar.collapsed .footer-btn-group{flex-direction:column;height:auto;border-radius:10px;}
+.sidebar.collapsed .footer-btn-group .theme-toggle,.sidebar.collapsed .footer-btn-group .sidebar-toggle{width:36px;height:32px;flex:none;}
+.sidebar.collapsed .footer-btn-group .btn-divider{width:80%;height:1px;}
+.user-avatar{width:28px;height:28px;border-radius:50%;background:var(--cyan-dim);border:1px solid var(--border-bright);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--cyan);flex-shrink:0;}
+.user-name-text{font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;}
+.logout-btn{width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text-faint);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;transition:all .2s;flex-shrink:0;}
+.logout-btn:hover{background:var(--red-dim);border-color:var(--red);color:var(--red);}
+.sidebar.collapsed .user-name-text{display:none;}
+.sidebar.collapsed .user-badge{justify-content:center;}
+</style>
+</head>
+<body>
+
+<!-- ── Auth Overlay ─────────────────────────────────────────────── -->
+<div id="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo-badge"><div class="logo-dot"></div><span>DevX</span></div>
+      <h1>DevX <span>Usage</span> Tracker</h1>
+      <p>Tokens in. <em>Insight out.</em></p>
+    </div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Sign In</div>
+      <div class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</div>
+    </div>
+    <!-- LOGIN FORM -->
+    <div id="auth-login-form">
+      <div class="auth-field"><label>Email</label><input type="email" id="login-email" placeholder="you@company.com" autocomplete="email"></div>
+      <div class="auth-field"><label>Password</label>
+        <div class="auth-password-wrap">
+          <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+          <button type="button" class="auth-password-toggle" id="login-password-toggle" onclick="togglePasswordVisibility('login-password')" aria-label="Show password">
+            <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 5c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+        </div>
+      </div>
+      <button class="auth-btn" id="login-btn" onclick="doLogin()">Sign In</button>
+      <div class="auth-msg" id="login-msg"></div>
+    </div>
+    <!-- SIGNUP FORM -->
+    <div id="auth-signup-form" style="display:none;">
+      <div class="auth-field"><label>Full Name</label><input type="text" id="signup-name" placeholder="Your full name"></div>
+      <div class="auth-field"><label>Email</label><input type="email" id="signup-email" placeholder="you@company.com" autocomplete="email"></div>
+      <div class="auth-field"><label>Password</label>
+        <div class="auth-password-wrap">
+          <input type="password" id="signup-password" placeholder="Min 6 characters" autocomplete="new-password">
+          <button type="button" class="auth-password-toggle" id="signup-password-toggle" onclick="togglePasswordVisibility('signup-password')" aria-label="Show password">
+            <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 5c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+        </div>
+      </div>
+      <button class="auth-btn" id="signup-btn" onclick="doSignup()">Create Account</button>
+      <div class="auth-msg" id="signup-msg"></div>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-badge"><div class="logo-dot"></div><span>Live</span></div>
+      <h1 style="font-size: 24px;">DevX <span>Usage</span><br>Tracker</h1>
+      <p style="font-size: 12px;">Tokens in. <em>Insight out.</em></p>
+    </div>
+    <nav class="nav">
+      <div class="nav-label">Workspace</div>
+      <div class="nav-item active" data-user-only onclick="showPage('log',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Log My Day
+      </div>
+      <div class="nav-item" data-admin-only onclick="showPage('team',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Team Logs
+      </div>
+      <div class="nav-item" data-admin-only onclick="showPage('add-issue',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Issue Data
+      </div>
+      <div class="nav-label" data-admin-only>Analytics</div>
+      <div class="nav-item" data-admin-only onclick="showPage('weekly',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Weekly Insights
+      </div>
+      <div class="nav-item" data-admin-only onclick="showPage('leaderboard',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 20 18 10"/><polyline points="12 20 12 4"/><polyline points="6 20 6 14"/></svg>
+        Workload
+      </div>
+      <div class="nav-item" onclick="showPage('history',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        History
+      </div>
+      <div class="nav-item" data-admin-only onclick="showPage('epic-comparison',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><polyline points="20 9 12 15 4 9"/></svg>
+        Work Item Comparison
+      </div>
+      <div class="nav-label" data-admin-only>Config</div>
+      <div class="nav-item" data-admin-only onclick="showPage('settings',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-badge">
+        <div class="user-avatar" id="sidebar-avatar">?</div>
+        <span class="user-name-text" id="sidebar-username">Loading…</span>
+        <button class="logout-btn" onclick="doLogout()" title="Sign out">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </div>
+      <div class="sidebar-footer-controls">
+        <div class="footer-btn-group">
+          <button class="sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Collapse sidebar" aria-label="Toggle sidebar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 7l-4 4 4 4"/><path d="M16 7l4 4-4 4"/></svg>
+          </button>
+          <div class="btn-divider"></div>
+          <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Switch theme" aria-label="Switch theme">
+            <svg id="theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg id="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </aside>
+ 
+  <main class="main">
+    <div class="loading-bar" id="loading-bar"><div class="loading-bar-fill"></div></div>
+ 
+    <!-- LOG MY DAY -->
+    <div id="page-log" class="page active">
+      <div class="page-header">
+        <div class="header-row">
+          <div><h2>Log <span>My Day</span></h2><p>Fill in your numbers — takes 60 seconds ⚡</p></div>
+          <span class="date-badge" id="today-date"></span>
+        </div>
+    </div>
+    <div class="log-form">
+   
+        <h3 style="margin-bottom:20px;color:var(--cyan)">Shared Details</h3>
+   
+        <div class="form-grid-3">
+            <div class="field">
+                <label>Your Name</label>
+                <div id="f-name-display" style="padding:8px 12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);font-family:'Roboto',sans-serif;font-size:13px;line-height:1.5;min-height:36px;display:flex;align-items:center;">— Loading… —</div>
+                <input type="hidden" id="f-name" value="">
+            </div>
+   
+            <div class="field">
+                <label>Log Date</label>
+                <input type="date" id="f-date">
+            </div>
+
+        </div>
+   
+        <hr style="margin:25px 0;border-color:var(--border)">
+   
+        <div id="records-container"></div>
+   
+        <div class="btn-row">
+   
+            <button class="btn secondary" onclick="addRecord()">
+                ➕ Add Record
+            </button>
+   
+            <button class="btn" id="submit-btn" onclick="submitLog()">
+                💾 Save All Records
+            </button>
+   
+            <span class="status-msg" id="submit-status"></span>
+   
+        </div>
+    </div>
+  </div>
+    <!-- </div>
+        <div class="form-grid">
+          <div class="field"><label>Your Name</label>
+            <select id="f-name">
+              <option value="">— Select your name —</option>
+              <option>Venkateswara Rao Lokam</option><option>Amit Singh</option>
+              <option>Ayush Dubey</option><option>Gnana Surya Teja Kurapati</option>
+              <option>Gopala Sharma</option><option>Keerthika Gummati</option>
+              <option>Kiran Kumar Manchikatla</option><option>Naveen Chiluwari</option>
+              <option>Nevil Sakhreliya</option><option>Phani Sathvika Pericharla</option>
+              <option>Saiteja Chippagiri</option><option>Shivang Sharma</option>
+              <option>Sidhardha Narisetty</option><option>Sivasai Nimmagadda</option>
+              <option>Swarup Saha</option><option>Vishal Dogra</option>
+            </select>
+          </div>
+          <div class="field"><label>Domain</label>
+            <select id="f-domain">
+              <option value="">— Select domain —</option>
+              <option value="Frontend">Frontend</option><option value="Backend">Backend</option>
+              <option value="Full Stack">Full Stack</option><option value="Python">Python</option>
+              <option value="Java">Java</option><option value="DevOps">DevOps</option>
+              <option value="QA">QA</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>Log Date</label><input type="date" id="f-date"></div>
+          <div class="field"><label>Ticket Type</label>
+            <select id="f-ticket-type">
+              <option value="">— Select type —</option>
+              <option value="Feature">Feature</option><option value="Bug">Bug</option>
+              <option value="Settlements">Settlements</option><option value="EPIC-story">EPIC-story</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid-3">
+          <div class="field"><label>Tickets Closed</label><input type="number" id="f-tickets" min="0" value="0"></div>
+          <div class="field"><label>Tokens Used</label><input type="number" id="f-tokens" min="0" step="500" value="0"></div>
+          <div class="field"><label>Dollars Used</label><input type="number" id="f-dollars" min="0" step="0.01" value="0"></div>
+          <div class="field"><label>Hours Worked</label><input type="number" id="f-hours" min="0" max="16" step="0.5" value="0"></div>
+        </div>
+        <div class="form-grid-3">
+          <div class="field"><label>Tickets Reopened</label><input type="number" id="f-reopened" min="0" value="0"></div>
+          <div class="field"><label>PRs Merged</label><input type="number" id="f-prs" min="0" value="0"></div>
+          <div class="field"><label>AI Prompts Count</label><input type="number" id="f-prompts" min="0" value="0"></div>
+        </div>
+        <div class="field"><label>Notes (optional)</label><textarea id="f-notes" placeholder="Blockers, meetings, anything unusual about today..."></textarea></div>
+        <div class="btn-row">
+          <button class="btn" id="submit-btn" onclick="submitLog()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Submit Log
+          </button>
+          <span class="status-msg" id="submit-status"></span>
+        </div>
+      </div>
+    </div> -->
+ 
+    <!-- TEAM VIEW -->
+    <div id="page-team" class="page">
+      <div class="page-header">
+        <div class="header-row">
+          <div>
+            <h2>Team <span>Logs</span></h2>
+            <p id="team-view-desc">Select a date range to view team submissions</p>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:flex-end;">
+            <div class="field">
+              <label>From</label>
+              <input id="team-from" type="date" value="" onchange="loadTeamView()" style="padding:8px 10px;border-radius:10px;border:1px solid var(--border-bright);background:var(--surface2);color:var(--text);font-family:'Roboto',sans-serif;font-size:13px;" />
+            </div>
+            <div class="field">
+              <label>To</label>
+              <input id="team-to" type="date" value="" onchange="loadTeamView()" style="padding:8px 10px;border-radius:10px;border:1px solid var(--border-bright);background:var(--surface2);color:var(--text);font-family:'Roboto',sans-serif;font-size:13px;" />
+            </div>
+            <button class="btn secondary" onclick="loadTeamView()">↻ Refresh</button>
+          </div>
+        </div>
+      </div>
+      <div class="metric-grid">
+      <div class="metric-card cyan"><p class="m-label">Submitted</p><p class="m-value" id="tm-submitted">—</p><p class="m-sub">of 16 devs</p></div>
+        <div class="metric-card"><p class="m-label">PRs Merged</p><p class="m-value" id="tm-prs">—</p><p class="m-sub">today</p></div>
+        <div class="metric-card"><p class="m-label">Tokens Used</p><p class="m-value" id="tm-tokens">—</p><p class="m-sub" id="tm-cost">$0.00</p></div>
+        <div class="metric-card"><p class="m-label">Time Saved</p><p class="m-value" id="tm-time-saved">—</p><p class="m-sub">hours saved</p></div>
+        <div class="metric-card" id="tm-qf-card"><p class="m-label">Quality Rate</p><p class="m-value" id="tm-qf">—</p><p class="m-sub" id="tm-reopened">0 reopened</p></div>
+      </div>
+      <div class="section"><p class="section-title" id="team-logs-title">Today's Logs</p>
+        <table class="data-table"><thead><tr><th>Developer</th><th>Domain</th><th>Tickets</th><th>Tokens</th><th>Cost</th><th>PRs</th><th>Reopened</th><th>Quality Factor</th><th>Notes</th></tr></thead>
+        <tbody id="team-tbody"><tr><td colspan="9"><div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-title">Loading team data</div><div class="empty-state-sub">Fetching today's submissions…</div></div></td></tr></tbody></table>
+      </div>
+    </div>
+ 
+    <!-- ADD ISSUE DATA -->
+    <div id="page-add-issue" class="page">
+      <div class="page-header">
+        <div class="header-row">
+          <div>
+            <h2>Add <span>Issue Data</span></h2>
+            <p>Pick a category, fill in the details, then save — this appends a row to the matching Supabase table and to the SharePoint Excel sheet.</p>
+          </div>
+        </div>
+      </div>
+      <div class="log-form">
+        <h3 style="margin-bottom:20px;color:var(--cyan)">Issue Details</h3>
+
+        <div class="form-grid" style="margin-bottom:8px;">
+          <div class="field">
+            <label>Issue Category</label>
+            <select id="issue-type-select" onchange="renderIssueForm()">
+              <option value="">— Select category —</option>
+              <option value="epics">📄 Epic</option>
+              <option value="bugs">🪲 Bug</option>
+              <option value="non_epic">📌 Non-Epic Issue</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="issue-form-fields" class="issue-fields-grid"></div>
+
+        <div id="issue-form-hint" class="empty-state" style="border:1px dashed var(--border);border-radius:var(--radius-lg);margin:8px 0;"><div class="empty-state-icon">📝</div><div class="empty-state-title">Select a category above</div><div class="empty-state-sub">Choose an issue type from the dropdown to load the appropriate data entry form.</div></div>
+
+        <hr style="margin:25px 0;border-color:var(--border)">
+
+        <div style="margin-bottom:16px;">
+          <p style="font-size:11px;color:var(--text-faint);margin-bottom:10px;font-family:'Roboto',sans-serif;">Syncing to SharePoint Excel requires a one-time Microsoft sign-in. This needs Azure AD app configuration — see the script comments for setup instructions.</p>
+          <div class="btn-row" style="margin-top:0;">
+            <button class="btn secondary" onclick="connectMicrosoft()">🔗 Connect Microsoft Account</button>
+            <span class="status-msg" id="ms-connect-status"></span>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn" id="issue-submit-btn" onclick="submitIssueForm()">💾 Save Issue</button>
+          <span class="status-msg" id="issue-form-status"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- WEEKLY INSIGHTS -->
+    <div id="page-weekly" class="page">
+      <div class="page-header">
+        <div class="header-row">
+          <div>
+            <h2>Weekly <span>Insights</span></h2>
+            <p>Team performance for the selected date range</p>
+            <p id="weekly-range-desc" style="margin-top:8px;font-size:13px;color:var(--text-muted)">Select a start and end date to narrow the insights.</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:8px">
+              <label for="weekly-developer" style="font-size:13px;color:var(--text-muted);">Developer</label>
+              <select id="weekly-developer" onchange="loadWeekly()" style="padding:8px 10px;border-radius:10px;border:1px solid var(--border-bright);background:var(--surface2);color:var(--text);font-family:'Roboto',sans-serif;font-size:13px;min-width:170px;">
+                <option value="">All Developers</option>
+              </select>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <label for="weekly-start" style="font-size:13px;color:var(--text-muted);">From</label>
+              <input id="weekly-start" type="date" onchange="loadWeekly()" style="padding:8px 10px;border-radius:10px;border:1px solid var(--border-bright);background:var(--surface2);color:var(--text);font-family:'Roboto',sans-serif;font-size:13px;" />
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <label for="weekly-end" style="font-size:13px;color:var(--text-muted);">To</label>
+              <input id="weekly-end" type="date" onchange="loadWeekly()" style="padding:8px 10px;border-radius:10px;border:1px solid var(--border-bright);background:var(--surface2);color:var(--text);font-family:'Roboto',sans-serif;font-size:13px;" />
+            </div>
+            <button class="btn secondary" onclick="loadWeekly()">↻ Refresh</button>
+          </div>
+        </div>
+      </div>
+      <div class="metric-grid">
+        <div class="metric-card cyan"><p class="m-label">Tickets This Week</p><p class="m-value" id="wm-tickets">—</p></div>
+        <div class="metric-card"><p class="m-label">Total AI Cost</p><p class="m-value" id="wm-cost">—</p></div>
+        <div class="metric-card"><p class="m-label">Tokens Used</p><p class="m-value" id="wm-tokens">—</p></div>
+        <div class="metric-card" id="wm-cpt-card"><p class="m-label">Avg Cost / Ticket</p><p class="m-value" id="wm-cpt">—</p></div>
+        <div class="metric-card" id="wm-qf-card"><p class="m-label">Quality Rate</p><p class="m-value" id="wm-qf">—</p></div>
+        <div class="metric-card"><p class="m-label">PRs Merged</p><p class="m-value" id="wm-prs">—</p></div>
+        <div class="metric-card"><p class="m-label">Time Saved</p><p class="m-value" id="wm-time-saved">—</p></div>
+      </div>
+      <div class="two-col">
+        <div class="chart-card"><h3>Ticket Closed — Daily</h3><div class="chart-wrap"><canvas id="ticketChart"></canvas></div></div>
+        <div class="chart-card"><h3>PRs Merged vs PRs Raised</h3><div class="chart-wrap"><canvas id="devPrChart"></canvas></div></div>
+        <div class="chart-card"><h3>Cost Per Ticket & Tokens Per Ticket</h3><div class="chart-wrap"><canvas id="devTokenChart"></canvas></div></div>
+        <div class="chart-card"><h3>PRs Raised vs Hours Worked</h3><div class="chart-wrap"><canvas id="costChart"></canvas></div></div>
+      </div>
+      <div class="section"><p class="section-title">Developer Weekly Summary</p>
+        <table class="data-table"><thead><tr><th>Developer</th><th>Domain</th><th>Tickets</th><th>Tokens</th><th>Cost</th><th>PRs</th><th>Reopened</th><th>Time Saved</th><th>Quality Factor</th></tr></thead>
+        <tbody id="weekly-dev-tbody"><tr><td colspan="9"><div class="empty-state"><div class="empty-state-icon">📊</div><div class="empty-state-title">No data yet</div><div class="empty-state-sub">Select a date range to load developer summaries.</div></div></td></tr></tbody></table>
+      </div>
+      <div class="section" id="weekly-ticket-section"><p class="section-title">Ticket Insights <span id="weekly-ticket-day-wrap" style="display:none">— <span id="weekly-ticket-day"></span> <button class="btn secondary" style="padding:3px 10px;font-size:11px;margin-left:8px" onclick="showAllWeeklyTickets()">Show All Tickets</button></span></p>
+        <p id="weekly-ticket-summary" style="font-size:12px;color:var(--text-faint);margin-bottom:10px">Select a date range to see ticket insights.</p>
+        <table class="data-table"><tbody id="weekly-ticket-tbody"><tr><td><div class="empty-state"><div class="empty-state-icon">🎫</div><div class="empty-state-title">No tickets to display</div><div class="empty-state-sub">Ticket status timelines will appear here after loading data.</div></div></td></tr></tbody></table>
+      </div>
+      <div class="section"><p class="section-title">Auto Insights</p>
+        <div id="insights-cont"><div class="empty-state"><div class="empty-state-icon">💡</div><div class="empty-state-title">Awaiting data</div><div class="empty-state-sub">Auto-generated insights will appear here once weekly data is loaded.</div></div></div>
+      </div>
+    </div>
+ 
+    <!-- DEVELOPER INSIGHTS - DEPRECATED/MERGED TO WEEKLY INSIGHTS -->
+    <div id="page-developer" class="page" style="display:none;">
+      <div class="page-header">
+        <div class="header-row">
+          <div>
+            <h2>Developer <span>Insights</span></h2>
+            <p>View PRs, tokens, prompts and time saved for one developer.</p>
+            <p id="developer-range-desc" style="margin-top:8px;font-size:13px;color:var(--text-muted)">Pick a developer and a date range.</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:8px">
+              <label for="developer-select" style="font-size:13px;color:var(--text-muted);">Developer</label>
+              <select id="developer-select" onchange="loadDeveloperInsights()" style="padding:8px 10px;border-radius:10px;border:1px solid var(--border-bright);background:var(--surface2);color:var(--text);font-family:'Roboto',sans-serif;font-size:13px;min-width:170px;">
+                <option value="">— Select developer —</option>
+              </select>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <label for="developer-start" style="font-size:13px;color:var(--text-muted);">From</label>
+              <input id="developer-start" type="date" onchange="loadDeveloperInsights()" style="padding:8px 10px;border-radius:10px;border:1px solid var(--border-bright);background:var(--surface2);color:var(--text);font-family:'Roboto',sans-serif;font-size:13px;" />
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <label for="developer-end" style="font-size:13px;color:var(--text-muted);">To</label>
+              <input id="developer-end" type="date" onchange="loadDeveloperInsights()" style="padding:8px 10px;border-radius:10px;border:1px solid var(--border-bright);background:var(--surface2);color:var(--text);font-family:'Roboto',sans-serif;font-size:13px;" />
+            </div>
+            <button class="btn secondary" onclick="loadDeveloperInsights()">↻ Refresh</button>
+          </div>
+        </div>
+      </div>
+      <div class="metric-grid">
+        <div class="metric-card cyan"><p class="m-label">PRs Merged</p><p class="m-value" id="dev-prs">—</p></div>
+        <div class="metric-card"><p class="m-label">Tokens Used</p><p class="m-value" id="dev-tokens">—</p></div>
+        <div class="metric-card"><p class="m-label">Time Saved</p><p class="m-value" id="dev-time-saved">—</p></div>
+        <div class="metric-card"><p class="m-label">AI Prompts</p><p class="m-value" id="dev-prompts">—</p></div>
+        <div class="metric-card" id="dev-qf-card"><p class="m-label">Quality Rate</p><p class="m-value" id="dev-qf">—</p></div>
+      </div>
+      <div class="two-col">
+        <div class="chart-card"><h3>PRs Merged vs PRs Raised</h3><div class="chart-wrap"><canvas id="devPrChart"></canvas></div></div>
+        <div class="chart-card"><h3>Tokens Used — Trend</h3><div class="chart-wrap"><canvas id="devTokenChart"></canvas></div></div>
+      </div>
+      <div class="section"><p class="section-title">Daily Summary</p>
+        <table class="data-table"><thead><tr><th>Date</th><th>Tickets</th><th>PRs</th><th>Tokens</th><th>Prompts</th><th>Time Saved</th><th>Cost</th><th>Notes</th></tr></thead>
+        <tbody id="developer-tbody"><tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">👤</div><div class="empty-state-title">Select a developer</div><div class="empty-state-sub">Choose a developer from the dropdown to view their daily summary.</div></div></td></tr></tbody></table>
+      </div>
+     
+    </div>
+ 
+    <!-- WORKLOAD -->
+    <div id="page-leaderboard" class="page">
+      <div class="page-header">
+        <div class="header-row">
+          <div>
+            <h2>Team <span>Workload</span></h2>
+            <p id="lb-range-desc" style="margin-top:4px;font-size:13px;color:var(--text-muted)">Select a date range to view team ticket workload.</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:8px">
+              <label for="lb-start" style="font-size:13px;color:var(--text-muted);">From</label>
+              <input id="lb-start" type="date" onchange="loadLeaderboard()" style="padding:8px 10px;border-radius:10px;border:1px solid var(--border-bright);background:var(--surface2);color:var(--text);font-family:'Roboto',sans-serif;font-size:13px;" />
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <label for="lb-end" style="font-size:13px;color:var(--text-muted);">To</label>
+              <input id="lb-end" type="date" onchange="loadLeaderboard()" style="padding:8px 10px;border-radius:10px;border:1px solid var(--border-bright);background:var(--surface2);color:var(--text);font-family:'Roboto',sans-serif;font-size:13px;" />
+            </div>
+            <button class="btn secondary" onclick="loadLeaderboard()">↻ Refresh</button>
+          </div>
+        </div>
+      </div>
+      <div id="lb-filter-bar" class="dev-filter-bar" style="display:none;">
+        <span class="dev-filter-label">Filter</span>
+        <span id="lb-filter-pills" style="display:contents;"></span>
+      </div>
+      <div id="lb-rows" class="lb-cards-grid"><div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-title">Loading workload</div><div class="empty-state-sub">Fetching team ticket data…</div></div></div>
+    </div>
+
+    <!-- WORKLOAD TICKET MODAL -->
+    <div id="wl-modal-backdrop" class="wl-modal-backdrop" onclick="wlModalClose(event)">
+      <div class="wl-modal" onclick="event.stopPropagation()">
+        <div class="wl-modal-head">
+          <div id="wl-modal-avatar" class="wl-modal-avatar"></div>
+          <div>
+            <div id="wl-modal-title" class="wl-modal-title"></div>
+            <div id="wl-modal-sub" class="wl-modal-sub"></div>
+          </div>
+          <div class="wl-modal-close" onclick="wlModalClose()">&#x2715;</div>
+        </div>
+        <div class="wl-modal-body" id="wl-modal-body"></div>
+      </div>
+    </div>
+ 
+    <!-- HISTORY -->
+    <div id="page-history" class="page">
+      <div class="page-header">
+        <div class="header-row"><div><h2>Log <span>History</span></h2><p>All submitted entries</p></div>
+        <button class="btn secondary" onclick="loadHistory()">↻ Refresh</button></div>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Date</th><th>Developer</th><th>Domain</th><th>Tickets</th><th>Tokens</th><th>Cost</th><th>PRs</th><th>Reopened</th><th>Quality</th><th>Notes</th></tr></thead>
+        <tbody id="history-tbody"><tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">Loading logs</div><div class="empty-state-sub">Fetching your submission history…</div></div></td></tr></tbody>
+      </table>
+    </div>
+ 
+    <!-- WORK ITEM COMPARISON -->
+    <div id="page-epic-comparison" class="page">
+      <div class="page-header" style="position:relative;">
+        <div class="header-row">
+          <div>
+            <h2>Work Item <span>Comparison</span></h2>
+            <p>Compare Epics, Bugs, and Non-Epic issues side-by-side.</p>
+          </div>
+          <button class="run-compare-cta" onclick="runComparison()">▶ Run Comparison</button>
+        </div>
+        <div class="compare-panel" style="margin-top:24px;padding-bottom:24px;">
+          <input type="hidden" id="compare-type" value="epics">
+          <div class="compare-tabs">
+            <div id="tab-epics" class="compare-tab active" onclick="setCompareType('epics')">📄 Epics</div>
+            <div id="tab-bugs" class="compare-tab" onclick="setCompareType('bugs')">🪲 Bugs</div>
+            <div id="tab-non" class="compare-tab" onclick="setCompareType('non_epic')">📌 Non-Epic Issues</div>
+          </div>
+          <div class="compare-grid" style="margin-top:18px;">
+            <div class="compare-section" style="border:1px solid var(--border);">
+              <h3 style="color:var(--cyan);margin-bottom:12px" id="epic1-heading">Epic A</h3>
+              <div class="form-grid">
+                <div class="field" id="epic1-number-field">
+                  <label id="epic1-label">Epic ID</label>
+                  <input type="text" id="epic1-number" placeholder="— Select Epic ID —">
+                  <select id="epic1-feature-select" style="display:none;" onchange="document.getElementById('epic1-number').value=this.value">
+                    <option value="">— All Feature Areas —</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Start Date</label>
+                  <input type="date" id="epic1-start">
+                </div>
+                <div class="field">
+                  <label>End Date</label>
+                  <input type="date" id="epic1-end">
+                </div>
+                <div class="field">
+                  <label>Developers</label>
+                  <select id="epic1-devs" multiple size="8" style="height:150px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);">
+                  </select>
+                  <small class="small-note">Hold Ctrl/Cmd to select multiple</small>
+                </div>
+              </div>
+              <div class="small-note">Select Epic ID or Feature Area depending on type.</div>
+            </div>
+
+            <div class="compare-section" style="border:1px solid var(--border);">
+              <h3 style="color:var(--cyan);margin-bottom:12px" id="epic2-heading">Epic B</h3>
+              <div class="form-grid">
+                <div class="field" id="epic2-number-field">
+                  <label id="epic2-label">Epic ID</label>
+                  <input type="text" id="epic2-number" placeholder="— Select Epic ID —">
+                  <select id="epic2-feature-select" style="display:none;" onchange="document.getElementById('epic2-number').value=this.value">
+                    <option value="">— All Feature Areas —</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Start Date</label>
+                  <input type="date" id="epic2-start">
+                </div>
+                <div class="field">
+                  <label>End Date</label>
+                  <input type="date" id="epic2-end">
+                </div>
+                <div class="field">
+                  <label>Developers</label>
+                  <select id="epic2-devs" multiple size="8" style="height:150px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);">
+                  </select>
+                  <small class="small-note">Hold Ctrl/Cmd to select multiple</small>
+                </div>
+              </div>
+              <div class="small-note">You can leave Epic B empty to compare against overall baseline.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- RESULTS -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:20px;">
+        <div>
+          <div class="section">
+            <p class="section-title" id="epic1-title">Epic A Results</p>
+            <table class="data-table">
+              <thead class="comparison-table-head"></thead>
+              <tbody id="epic1-tbody"><tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-title">No results yet</div><div class="empty-state-sub">Configure filters and click Run Comparison to view results here.</div></div></td></tr></tbody>
+            </table>
+            <div class="chart-card" style="margin-top:18px;">
+              <h3>Story Points vs Developer</h3>
+              <div class="chart-wrap"><canvas id="epic1-sp-chart"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="section">
+            <p class="section-title" id="epic2-title">Epic B Results</p>
+            <table class="data-table">
+              <thead class="comparison-table-head"></thead>
+              <tbody id="epic2-tbody"><tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-title">No results yet</div><div class="empty-state-sub">Configure filters and click Run Comparison to view results here.</div></div></td></tr></tbody>
+            </table>
+            <div class="chart-card" style="margin-top:18px;">
+              <h3>Story Points vs Developer</h3>
+              <div class="chart-wrap"><canvas id="epic2-sp-chart"></canvas></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- SETTINGS -->
+    <div id="page-settings" class="page">
+      <div class="page-header"><h2>Settings <span>&amp; Config</span></h2><p>Pricing and target thresholds</p></div>
+      <div class="settings-card">
+        <h3>Pricing & Targets</h3>
+        <!-- <div class="form-grid">
+          <div class="field"><label>Cost per 1K tokens ($)</label><input type="number" id="s-cost" step="0.001" min="0" placeholder="e.g. 0.015"></div>
+          <div class="field"><label>Target cost per ticket ($)</label><input type="number" id="s-target" step="0.001" min="0" placeholder="e.g. 0.050"></div>
+        </div> -->
+        <div class="btn-row"><button class="btn" onclick="saveSettings()">Save Settings</button><span class="status-msg ok" id="settings-status"></span></div>
+        <div class="divider"></div>
+        <p style="font-size:11px;color:var(--text-faint);line-height:1.8;font-family:'Roboto',sans-serif;">Settings are saved locally in your browser. Update cost per 1K tokens whenever pricing changes. The target cost per ticket controls the green/amber threshold on metric cards.</p>
+      </div>
+    </div>
+ 
+  </main>
+</div>
+ 
+<script>
+/* ======================================================================
+   SUPABASE CLIENT + AUTH SYSTEM
+   ====================================================================== */
+const SUPABASE_URL='https://lnksjijdqyctuwbwlsou.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxua3NqaWpkcXljdHV3Yndsc291Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NDM0NzQsImV4cCI6MjA5NjMxOTQ3NH0.yfSZ5mTpIyDaMiXhA3wSlBamGXfZKUDIOT16tXqXwYI';
+
+// Initialise Supabase client (from CDN)
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ── Global auth state ─────────────────────────────────────────── */
+let currentUser   = null;   // Supabase auth user object
+let currentProfile= null;   // profiles row { full_name, role }
+let isAdmin       = false;
+
+/* ── Auth tab switch ───────────────────────────────────────────── */
+function switchAuthTab(tab){
+  document.getElementById('auth-login-form').style.display  = tab==='login'  ? '' : 'none';
+  document.getElementById('auth-signup-form').style.display = tab==='signup' ? '' : 'none';
+  document.getElementById('tab-login').classList.toggle('active', tab==='login');
+  document.getElementById('tab-signup').classList.toggle('active', tab==='signup');
+}
+
+/* ── Password show/hide toggle ────────────────────────────────── */
+function togglePasswordVisibility(inputId){
+  const input = document.getElementById(inputId);
+  const btn   = document.getElementById(inputId + '-toggle');
+  const show  = input.type === 'password';
+  input.type  = show ? 'text' : 'password';
+  btn.classList.toggle('is-visible', show);
+  btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+}
+
+
+/* ── Login ─────────────────────────────────────────────────────── */
+async function doLogin(){
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const msgEl    = document.getElementById('login-msg');
+  const btn      = document.getElementById('login-btn');
+  msgEl.textContent=''; msgEl.className='auth-msg';
+  if(!email||!password){ msgEl.className='auth-msg err'; msgEl.textContent='Please enter email and password.'; return; }
+  btn.disabled=true; btn.textContent='Signing in…';
+  const {data,error} = await _sb.auth.signInWithPassword({email,password});
+  btn.disabled=false; btn.textContent='Sign In';
+  if(error){ msgEl.className='auth-msg err'; msgEl.textContent=error.message; return; }
+  await onAuthSuccess(data.user);
+}
+
+/* ── Sign up ───────────────────────────────────────────────────── */
+async function doSignup(){
+  const name     = document.getElementById('signup-name').value.trim();
+  const email    = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  const msgEl    = document.getElementById('signup-msg');
+  const btn      = document.getElementById('signup-btn');
+  msgEl.textContent=''; msgEl.className='auth-msg';
+  if(!name||!email||!password){ msgEl.className='auth-msg err'; msgEl.textContent='All fields are required.'; return; }
+  if(password.length<6){ msgEl.className='auth-msg err'; msgEl.textContent='Password must be at least 6 characters.'; return; }
+  btn.disabled=true; btn.textContent='Creating account…';
+  const {data,error} = await _sb.auth.signUp({email, password, options:{data:{full_name:name}}});
+  if(error){ btn.disabled=false; btn.textContent='Create Account'; msgEl.className='auth-msg err'; msgEl.textContent=error.message; return; }
+  // Insert profile row immediately (role defaults to 'user' in DB)
+  if(data.user){
+    await _sb.from('profiles').upsert({id:data.user.id, full_name:name, email:email, role:'user'},{onConflict:'id'});
+  }
+  btn.disabled=false; btn.textContent='Create Account';
+  // If email confirmation is disabled, sign in directly; otherwise show message
+  if(data.session){
+    await onAuthSuccess(data.user);
+  } else {
+    msgEl.className='auth-msg ok';
+    msgEl.textContent='✓ Account created! Check your email to confirm, then sign in.';
+    switchAuthTab('login');
+  }
+}
+
+/* ── Logout ────────────────────────────────────────────────────── */
+async function doLogout(){
+  await _sb.auth.signOut();
+  currentUser=null; currentProfile=null; isAdmin=false;
+  document.getElementById('auth-overlay').style.display='flex';
+  document.getElementById('login-email').value='';
+  document.getElementById('login-password').value='';
+  document.getElementById('login-msg').textContent='';
+}
+
+/* ── Called once auth is confirmed ─────────────────────────────── */
+async function onAuthSuccess(user){
+  currentUser = user;
+  // Fetch profile
+  const {data:prof} = await _sb.from('profiles').select('full_name,role').eq('id',user.id).single();
+  currentProfile = prof || {full_name: user.user_metadata?.full_name || user.email, role:'user'};
+  isAdmin = currentProfile.role === 'admin';
+
+  // Hide overlay
+  document.getElementById('auth-overlay').style.display='none';
+
+  // Update sidebar user badge
+  const displayName = currentProfile.full_name || user.email;
+  const initials    = displayName.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('sidebar-avatar').textContent   = initials;
+  document.getElementById('sidebar-username').textContent = displayName;
+
+  // Apply role-based nav visibility
+  applyRoleVisibility();
+
+  // Admins don't see "Log My Day" — land them on Team Logs instead of the default page
+  if(isAdmin){
+    const teamNav = document.querySelector(".nav-item[onclick=\"showPage('team',this)\"]");
+    if(teamNav) showPage('team', teamNav);
+  }
+
+  // Populate all developer selectors from profiles table
+  await populateDeveloperSelectors();
+
+  // Set "Your Name" in Log My Day to locked value
+  setLogMyDayName(displayName);
+}
+
+/* ── Role-based nav visibility ─────────────────────────────────── */
+function applyRoleVisibility(){
+  document.querySelectorAll('[data-admin-only]').forEach(el=>{
+    el.style.display = isAdmin ? '' : 'none';
+  });
+  document.querySelectorAll('[data-user-only]').forEach(el=>{
+    el.style.display = isAdmin ? 'none' : '';
+  });
+}
+
+/* ── Populate all developer <select> elements from DB ────────────*/
+async function populateDeveloperSelectors(){
+  const {data:profiles, error} = await _sb.from('profiles').select('full_name,role,email').order('full_name');
+  if(error||!profiles) return;
+  // Exclude admins — these selectors (Weekly Insights, Team Workload, Comparison,
+  // and Add Issue Data: Epic Owner / Bug Owner / Assignee) should only list non-admin developers.
+  const names = profiles.filter(p=>p.role!=='admin').map(p=>p.full_name).filter(Boolean);
+
+  // Build a name -> real signup email lookup so Team Workload (and anywhere else)
+  // can show the email the user actually registered with, instead of guessing one.
+  window._devEmailMap = window._devEmailMap || {};
+  profiles.forEach(p=>{
+    if(p.full_name && p.email) window._devEmailMap[p.full_name] = p.email;
+  });
+
+  // Update global ISSUE_DEV_LIST so Add Issue form selects also use DB users (non-admins only)
+  // Mutate in place so ISSUE_FORM_CONFIGS field references stay live
+  ISSUE_DEV_LIST.length = 0;
+  names.forEach(n => ISSUE_DEV_LIST.push(n));
+
+  const devSelectors = ['weekly-developer','developer-select','epic1-devs','epic2-devs'];
+  devSelectors.forEach(id=>{
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    // Keep the first option (All Developers / placeholder), remove the rest
+    while(sel.options.length > 1) sel.remove(1);
+    names.forEach(n=>{
+      const opt = document.createElement('option');
+      opt.value = n; opt.textContent = n;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+/* ── Lock "Your Name" in Log My Day ────────────────────────────── */
+function setLogMyDayName(fullName){
+  const display = document.getElementById('f-name-display');
+  const hidden  = document.getElementById('f-name');
+  if(display) display.textContent = fullName;
+  if(hidden)  hidden.value = fullName;
+}
+
+/* ── Boot: check existing session ──────────────────────────────── */
+(async function initAuth(){
+  const {data:{session}} = await _sb.auth.getSession();
+  if(session && session.user){
+    await onAuthSuccess(session.user);
+  }
+  // Listen for auth changes (e.g. email confirmation redirect)
+  _sb.auth.onAuthStateChange(async(_event, session)=>{
+    if(session && session.user && !currentUser){
+      await onAuthSuccess(session.user);
+    }
+  });
+})();
+
+/* ── Allow Enter key in auth forms ─────────────────────────────── */
+document.addEventListener('keydown', e=>{
+  if(e.key!=='Enter') return;
+  const overlay = document.getElementById('auth-overlay');
+  if(overlay.style.display==='none') return;
+  const loginForm = document.getElementById('auth-login-form');
+  if(loginForm.style.display!=='none') doLogin();
+  else doSignup();
+});
+
+</script>
+<script>
+const TABLE='devx_daily_usage_tracker';
+const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+ 
+function getSettings(){
+
+  return {
+
+    costPer1K:
+      parseFloat(localStorage.getItem('devx_cost')) || 0.015,
+
+    targetCPT:
+      parseFloat(localStorage.getItem('devx_target')) || 0.050
+
+  };
+}
+ 
+async function sbFetch(path,options={}){
+  // Use the current session access token if available
+  let authToken = SUPABASE_KEY;
+  try{
+    const {data:{session}} = await _sb.auth.getSession();
+    if(session?.access_token) authToken = session.access_token;
+  }catch(e){}
+  const res=await fetch(SUPABASE_URL+'/rest/v1/'+path,{...options,headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+authToken,'Content-Type':'application/json','Prefer':options.prefer||'return=minimal',...(options.headers||{})}});
+  if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.message||'Request failed: '+res.status);}
+  if(res.status===204)return null;
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+ 
+function loading(show){document.getElementById('loading-bar').className='loading-bar'+(show?' active':'');}
+function domainClass(d){return(d||'').toLowerCase().replace(' ','');}
+ 
+
+function renderComparisonTableHead() {
+
+  const compareType =
+    document.getElementById('compare-type').value;
+
+  const showPrCycle =
+    compareType !== 'non_epic';
+
+  const html = `
+    <tr>
+      <th>Developer</th>
+      <th>Issues</th>
+      <th>Story Points</th>
+      <th>SLA Breaches</th>
+      <th>Avg TAT (days)</th>
+      ${
+        showPrCycle
+          ? '<th>Avg PR Cycle (days)</th>'
+          : ''
+      }
+    </tr>
+  `;
+
+  const heads =
+    document.querySelectorAll('.comparison-table-head');
+
+  heads.forEach(h => {
+    h.innerHTML = html;
+  });
+}
+
+function matchesCompareValue(row, selectedValue, compareType) {
+
+  if (!selectedValue) {
+    return true;
+  }
+
+  if (compareType === 'epics') {
+    return (row["Epic ID"] || row['Epic ID'] || '').toString().trim() === selectedValue.toString().trim();
+  }
+
+  if (compareType === 'bugs') {
+
+    const value =
+      (
+        row["Feature Area"] ||
+        row.featureArea ||
+        row.area ||
+        row['Feature Area'] ||
+        ''
+      )
+      .toLowerCase()
+      .trim();
+
+    return value ===
+      selectedValue.toLowerCase().trim();
+  }
+
+  if (compareType === 'non_epic') {
+
+    const issueType =
+      (
+        row["Issue type"] ||
+        row['Issue type'] ||
+        ''
+      )
+      .toLowerCase()
+      .trim();
+
+    return issueType ===
+      selectedValue.toLowerCase().trim();
+  }
+
+  return true;
+}
+
+
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  if(id==='team')loadTeamView();
+  if(id==='weekly')loadWeekly();
+  if(id==='leaderboard')loadLeaderboard();
+  if(id==='history')loadHistory();
+  if(id==='epic-comparison')loadEpicDevelopers();
+  if(id==='settings')loadSettings();
+  if(id==='add-issue')renderIssueForm();
+}
+ 
+renderComparisonTableHead();
+document.getElementById('today-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'short',year:'numeric'});
+document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+ 
+let recordCount = 0;
+ 
+function addRecord(){
+ 
+recordCount++;
+ 
+const html = `
+<div class="record-card"
+style="
+border:1px solid var(--border);
+padding:20px;
+border-radius:12px;
+margin-bottom:20px;
+">
+ 
+<h3 style="margin-bottom:15px;color:var(--cyan)">
+Record #${recordCount}
+</h3>
+ 
+<div class="form-grid">
+<div class="field">
+<label>Domain</label>
+<select class="r-domain">
+<option value="">Select</option>
+<option>Frontend</option>
+<option>Backend</option>
+<option>Full Stack</option>
+<option>Python</option>
+<option>Java</option>
+<option>DevOps</option>
+<option>QA</option>
+</select>
+</div>
+ 
+<div class="field">
+<label>Ticket Type</label>
+<select class="r-ticket-type">
+<option value="">Select</option>
+<option>Feature</option>
+<option>Bug</option>
+<option>Settlements</option>
+<option>EPIC-story</option>
+</select>
+</div>
+</div>
+ 
+<div class="form-grid">
+<div class="field">
+<label>Epic</label>
+<input type="text" class="r-epic" placeholder="Epic number">
+</div>
+
+<div class="field">
+<label>Ticket Number</label>
+<input class="r-ticket-number">
+</div>
+ 
+<div class="field">
+<label>Ticket Status</label>
+<select class="r-ticket-status">
+    <option value="">Select status</option>
+    <option>Backlog</option>
+    <option>Analysis in progress</option>
+    <option>Development in progress</option>
+    <option>PR raised</option>
+    <option>Merged in DEV-1</option>
+    <option>Ready for Test</option>
+    <option>Testing in progress</option>
+    <option>Blocked</option>
+    <option>Reopened</option>
+    <option>On Hold</option>
+    <option>Done</option>
+</select>
+</div>
+ 
+<div class="field">
+<label>Ticket Closed</label>
+<input type="number" class="r-tickets" value="0">
+</div>
+</div>
+ 
+<div class="form-grid-3">
+ 
+<div class="field">
+<label>Tokens Used</label>
+<input type="number" class="r-tokens" value="0">
+</div>
+ 
+<div class="field">
+<label>Dollars Used</label>
+<input type="number" class="r-dollars" value="0">
+</div>
+ 
+<div class="field">
+<label>Hours Worked</label>
+<input type="number" class="r-hours" value="0">
+</div>
+ 
+ 
+<div class="field">
+<label>Manual Estimated Hours (Without DevX)</label>
+<input
+    type="number"
+    class="r-manual-hours"
+    value="0"
+    step="0.5"
+    min="0">
+</div>
+ 
+ 
+</div>
+ 
+<div class="form-grid-3">
+ 
+<div class="field">
+<label>Ticket Reopened</label>
+<input type="number" class="r-reopened" value="0">
+</div>
+ 
+<div class="field">
+<label>PRs Raised</label>
+<input type="number" class="r-prs-raised" value="0">
+</div>
+ 
+<div class="field">
+<label>PRs Merged</label>
+<input type="number" class="r-prs" value="0">
+</div>
+ 
+<div class="field">
+<label>AI Prompts Count</label>
+<input type="number" class="r-prompts" value="0">
+</div>
+ 
+</div>
+ 
+<div class="field">
+<label>Notes</label>
+<textarea class="r-notes"></textarea>
+</div>
+ 
+<button
+class="btn secondary"
+onclick="this.parentElement.remove()"
+>
+🗑 Remove
+</button>
+ 
+</div>
+`;
+ 
+document
+.getElementById("records-container")
+.insertAdjacentHTML("beforeend",html);
+ 
+}
+ 
+async function submitLog(){
+ 
+const statusEl=document.getElementById('submit-status');
+const btn=document.getElementById('submit-btn');
+ 
+const name=document.getElementById('f-name').value;
+const date=document.getElementById('f-date').value;
+ 
+if(!name){
+statusEl.className='status-msg err';
+statusEl.textContent='Select name';
+return;
+}
+ 
+const cards=document.querySelectorAll('.record-card');
+ 
+if(cards.length===0){
+statusEl.className='status-msg err';
+statusEl.textContent='Add at least one record';
+return;
+}
+ 
+btn.disabled=true;
+loading(true);
+ 
+try{
+ 
+let payload=[];
+ 
+cards.forEach(card=>{
+ 
+payload.push({
+ 
+developer_name:name,
+log_date:date,
+ 
+epic_number:
+      card.querySelector('.r-epic').value || null,
+      domain:card.querySelector('.r-domain').value || null,
+ 
+ticket_type:
+card.querySelector('.r-ticket-type').value || null,
+ 
+ticket_status:
+card.querySelector('.r-ticket-status').value || null,
+ 
+ticket_number:
+card.querySelector('.r-ticket-number').value || null,
+ 
+ticket_closed:
+parseInt(card.querySelector('.r-tickets').value)||0,
+ 
+tokens_used:
+parseInt(card.querySelector('.r-tokens').value)||0,
+ 
+dollars_spent:
+parseFloat(card.querySelector('.r-dollars').value)||0,
+ 
+hours_worked:
+parseFloat(card.querySelector('.r-hours').value)||0,
+ 
+manual_estimated_hours:
+parseFloat(card.querySelector('.r-manual-hours').value)||0,
+ 
+ticket_reopened:
+parseInt(card.querySelector('.r-reopened').value)||0,
+ 
+prs_raised:
+parseInt(card.querySelector('.r-prs-raised').value)||0,
+ 
+prs_merged:
+parseInt(card.querySelector('.r-prs').value)||0,
+ 
+prompts_count:
+parseInt(card.querySelector('.r-prompts').value)||0,
+ 
+notes:
+card.querySelector('.r-notes').value || null
+ 
+});
+ 
+});
+ 
+await sbFetch(
+TABLE,
+{
+method:'POST',
+prefer:'return=minimal',
+body:JSON.stringify(payload)
+}
+);
+ 
+statusEl.className='status-msg ok';
+statusEl.textContent='✓ Saved '+payload.length+' records';
+ 
+}
+catch(e){
+ 
+statusEl.className='status-msg err';
+statusEl.textContent=e.message;
+ 
+}
+finally{
+ 
+btn.disabled=false;
+loading(false);
+ 
+}
+ 
+}
+ 
+async function loadTeamView(){
+
+  const fromInput=document.getElementById('team-from');
+  const toInput=document.getElementById('team-to');
+  const today=new Date().toISOString().split('T')[0];
+  let from=fromInput?.value || today;
+  let to=toInput?.value || today;
+
+  if(from>to){
+    const swap=from;
+    from=to;
+    to=swap;
+    if(fromInput) fromInput.value=from;
+    if(toInput) toInput.value=to;
+  }
+
+  const desc=document.getElementById('team-view-desc');
+  if(desc){
+    if(from===to){
+      desc.textContent = `Showing submissions for ${new Date(from).toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'short',year:'numeric'})}`;
+    } else {
+      desc.textContent = `Showing submissions from ${new Date(from).toLocaleDateString('en-IN',{day:'numeric',month:'short'})} to ${new Date(to).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}`;
+    }
+  }
+  const logsTitle=document.getElementById('team-logs-title');
+  if(logsTitle){
+    logsTitle.textContent = from===to ? `Logs for ${from}` : `Logs ${from} → ${to}`;
+  }
+
+  const tbody=document.getElementById('team-tbody');
+
+  tbody.innerHTML='<tr><td colspan="9"><div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-title">Loading data</div><div class="empty-state-sub">Fetching team submissions…</div></div></td></tr>';
+
+  loading(true);
+
+  const s=getSettings();
+
+  try{
+
+    const rows=await sbFetch(
+      TABLE+'?log_date=gte.'+from+'&log_date=lte.'+to+'&order=developer_name.asc',
+      {headers:{'Prefer':'return=representation'}}
+    );
+
+    if(!rows || rows.length===0){
+
+      document.getElementById('tm-submitted').textContent='0';
+      document.getElementById('tm-prs').textContent='0';
+      document.getElementById('tm-tokens').textContent='0.0K';
+      document.getElementById('tm-time-saved').textContent='0.0';
+      document.getElementById('tm-cost').textContent='$0.00';
+      document.getElementById('tm-qf').textContent='—';
+      document.getElementById('tm-reopened').textContent='0 reopened';
+      document.getElementById('tm-qf-card').className='metric-card';
+
+      tbody.innerHTML=
+      '<tr><td colspan="9"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">No submissions found</div><div class="empty-state-sub">No daily logs have been submitted for this date range yet.</div></div></td></tr>';
+
+      return;
+    }
+
+    const totTickets=rows.reduce(
+      (sum,r)=>sum+(r.ticket_closed||0),0
+    );
+
+    const totTokens=rows.reduce(
+      (sum,r)=>sum+(r.tokens_used||0),0
+    );
+
+    const totReopened=rows.reduce(
+      (sum,r)=>sum+(r.ticket_reopened||0),0
+    );
+
+    const totPrs=rows.reduce(
+      (sum,r)=>sum+(r.prs_merged||0),0
+    );
+
+    const totManual=rows.reduce(
+      (sum,r)=>sum+(r.manual_estimated_hours||0),0
+    );
+
+    const totHours=rows.reduce(
+      (sum,r)=>sum+(r.hours_worked||0),0
+    );
+
+    const timeSaved=totManual-totHours;
+
+    const totCost=totTokens/1000*(s.costPer1K || 0);
+
+    const qf=
+      totTickets>0
+      ? Math.round((1-totReopened/totTickets)*100)
+      : 100;
+
+    document.getElementById('tm-submitted').textContent=rows.length;
+    document.getElementById('tm-prs').textContent=totPrs;
+    document.getElementById('tm-tokens').textContent=
+      (totTokens/1000).toFixed(1)+'K';
+    document.getElementById('tm-time-saved').textContent=
+      (timeSaved>=0?'+':'-')+Math.abs(timeSaved).toFixed(1);
+
+    document.getElementById('tm-cost').textContent=
+      '$'+totCost.toFixed(2);
+
+    document.getElementById('tm-qf').textContent=qf+'%';
+
+    document.getElementById('tm-reopened').textContent=
+      totReopened+' reopened';
+
+    document.getElementById('tm-qf-card').className=
+      'metric-card'+(qf>=90?' good':' warn');
+
+    tbody.innerHTML=rows.map(r=>{
+
+      const cost=
+        (r.tokens_used||0)/1000*(s.costPer1K || 0);
+
+      return `
+      <tr>
+
+        <td class="dev-name">
+          ${r.developer_name}
+        </td>
+
+        <td>
+          ${
+            r.domain
+            ? `<span class="dtag ${domainClass(r.domain)}">${r.domain}</span>`
+            : '—'
+          }
+        </td>
+
+        <td class="mono">
+          ${r.ticket_closed||0}
+        </td>
+
+        <td class="mono">
+          ${((r.tokens_used||0)/1000).toFixed(1)}K
+        </td>
+
+        <td class="mono">
+          $${cost.toFixed(3)}
+        </td>
+
+        <td class="mono">
+          ${r.prs_merged||0}
+        </td>
+
+        <td class="mono">
+          ${r.ticket_reopened||0}
+        </td>
+
+        <td>
+          ${
+            (() => {
+              const closed = r.ticket_closed || 0;
+              const reopened = r.ticket_reopened || 0;
+              const qf = closed > 0 ? Math.round((1 - reopened / closed) * 100) : 100;
+              const color = qf >= 90 ? 'var(--green)' : qf >= 70 ? 'var(--amber)' : 'var(--red)';
+              return `<span style="font-size:12px;font-family:'Roboto',sans-serif;font-weight:600;color:${color}">${qf}%</span>`;
+            })()
+          }
+        </td>
+
+        <td
+          style="
+            max-width:140px;
+            overflow:hidden;
+            text-overflow:ellipsis;
+            white-space:nowrap
+          "
+          title="${r.notes||''}"
+        >
+          ${r.notes||'—'}
+        </td>
+
+      </tr>
+      `;
+
+    }).join('');
+
+  }catch(e){
+
+    tbody.innerHTML=
+    `<tr>
+      <td colspan="9"
+      class="empty"
+      style="color:var(--red)">
+      // error: ${e.message}
+      </td>
+    </tr>`;
+
+  }finally{
+
+    loading(false);
+
+  }
+}
+ 
+function isLightTheme(){return document.documentElement.getAttribute('data-theme')==='light';}
+
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme',theme);
+  const darkIcon=document.getElementById('theme-icon-dark');
+  const lightIcon=document.getElementById('theme-icon-light');
+  if(darkIcon && lightIcon){
+    darkIcon.style.display = theme==='light' ? 'none' : 'block';
+    lightIcon.style.display = theme==='light' ? 'block' : 'none';
+  }
+}
+
+function applySidebar(collapsed){
+  const app=document.querySelector('.app');
+  const sidebar=document.querySelector('.sidebar');
+  if(!app||!sidebar) return;
+  app.classList.toggle('collapsed',collapsed);
+  sidebar.classList.toggle('collapsed',collapsed);
+  const btn=document.getElementById('sidebar-toggle-btn');
+  if(btn){
+    btn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  }
+  try{localStorage.setItem('zilo-sidebar', collapsed ? 'true' : 'false');}catch(e){}
+}
+
+function toggleSidebar(){
+  const sidebar=document.querySelector('.sidebar');
+  if(!sidebar) return;
+  applySidebar(!sidebar.classList.contains('collapsed'));
+}
+
+function initSidebar(){
+  try{
+    const saved = localStorage.getItem('zilo-sidebar');
+    applySidebar(saved==='true');
+  }catch(e){}
+  document.querySelectorAll('.nav-item').forEach(item=>{
+    if(!item.dataset.tooltip){
+      const text = item.textContent.trim().replace(/\s+$/,'');
+      item.dataset.tooltip = text;
+      if(!item.title) item.title = text;
+    }
+  });
+}
+
+function initTeamRange(){
+  const today=new Date();
+  const to=today.toISOString().split('T')[0];
+  const fromDate=new Date(today);
+  fromDate.setDate(today.getDate()-6);
+  const from=fromDate.toISOString().split('T')[0];
+  const fromInput=document.getElementById('team-from');
+  const toInput=document.getElementById('team-to');
+  if(fromInput) fromInput.value=from;
+  if(toInput) toInput.value=to;
+}
+
+function refreshActivePageCharts(){
+  const activePage=document.querySelector('.page.active');
+  if(!activePage) return;
+  const id=activePage.id.replace('page-','');
+  if(id==='team')loadTeamView();
+  if(id==='weekly')loadWeekly();
+  if(id==='leaderboard')loadLeaderboard();
+  if(id==='epic-comparison')loadEpicDevelopers();
+}
+
+function toggleTheme(){
+  const next = isLightTheme() ? 'dark' : 'light';
+  applyTheme(next);
+  try{ localStorage.setItem('zilo-theme', next); }catch(e){}
+  refreshActivePageCharts();
+}
+
+(function initTheme(){
+  let saved=null;
+  try{ saved = localStorage.getItem('zilo-theme'); }catch(e){}
+  applyTheme(saved==='light' ? 'light' : 'dark');
+})();
+initSidebar();
+initTeamRange();
+function chartAxisColor(){return isLightTheme()?'#5c6c78':'#8295a6';}
+function chartLabelColor(){return isLightTheme()?'#4b5760':'#9fb4c4';}
+function chartGridColor(){return isLightTheme()?'rgba(92,118,137,0.14)':'rgba(130,149,166,0.12)';}
+function chartBgColor(){return isLightTheme()?'#fdfffd':'#151a21';}
+
+let ticketChartInst,costChartInst,devPrChartInst,devTokenChartInst,compareChartLeft,compareChartRight;
+let weeklyAllTicketRows=[];
+const TICKET_STATUS_PALETTE={'Backlog':'#e2e8f0','Analysis in progress':'#c7d8ff','Development in progress':'#e9dbff','PR raised':'#fff1c4','Merged in DEV-1':'#cdf7de','Ready for Test':'#c5f0ff','Testing in progress':'#ffd7f5','Blocked':'#ffccdb','Reopened':'#ffe8a8','On Hold':'#d6d6ff','Done':'#bef3c7','Unknown':'#9ca3af'};
+
+function buildTicketStatusPeriods(entries){
+  const sorted=entries.slice().sort((a,b)=>new Date(a.log_date)-new Date(b.log_date));
+  const periods=[];
+  let activeStatus=null,activeDate=null;
+  sorted.forEach(entry=>{
+    const status=entry.ticket_status||'Unknown';
+    if(activeStatus===null){activeStatus=status;activeDate=entry.log_date;return;}
+    if(status!==activeStatus){
+      const toDate=new Date(entry.log_date);
+      const days=Math.max(1,Math.round((toDate-new Date(activeDate))/86400000));
+      periods.push({status:activeStatus,from:activeDate,to:entry.log_date,days});
+      activeStatus=status;activeDate=entry.log_date;
+    }
+  });
+  if(activeStatus!==null){
+    const todayDate=new Date();todayDate.setHours(0,0,0,0);
+    const finalTo=activeStatus==='Done'?new Date(activeDate):todayDate;
+    const days=activeStatus==='Done'?1:Math.max(1,Math.round((finalTo-new Date(activeDate))/86400000));
+    const toStr=activeStatus==='Done'?activeDate:finalTo.toISOString().split('T')[0];
+    periods.push({status:activeStatus,from:activeDate,to:toStr,days});
+  }
+  return {periods,sortedEntries:sorted};
+}
+
+function renderTicketInsightAccordion(rows,idPrefix){
+  if(!rows||!rows.length) return '<tr><td><div class="empty-state"><div class="empty-state-icon">🎫</div><div class="empty-state-title">No tickets found</div><div class="empty-state-sub">There are no tickets matching your current filters for this date range.</div></div></td></tr>';
+  const tickets={};
+  rows.forEach(r=>{
+    const key=(r.ticket_number||'Unknown Ticket').toString();
+    if(!tickets[key]) tickets[key]={ticket_number:key,ticket_type:r.ticket_type||'—',entries:[]};
+    tickets[key].entries.push(r);
+  });
+  const formatDate=(dateStr)=>{const d=new Date(dateStr);return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});};
+  const ticketList=Object.values(tickets).sort((a,b)=>{
+    const aLast=Math.max(...a.entries.map(e=>new Date(e.log_date).getTime()));
+    const bLast=Math.max(...b.entries.map(e=>new Date(e.log_date).getTime()));
+    return bLast-aLast;
+  });
+  return ticketList.map((ticket,i)=>{
+    const {periods:statusPeriods,sortedEntries}=buildTicketStatusPeriods(ticket.entries);
+    const currentStatus=sortedEntries[sortedEntries.length-1].ticket_status||'Unknown';
+    const ticketId=`${idPrefix}-${i}`;
+    const totalDays=statusPeriods.reduce((sum,p)=>sum+p.days,0)||1;
+    const segments=statusPeriods.map(p=>{
+      const width=Math.max(6,(p.days/totalDays)*100);
+      const color=TICKET_STATUS_PALETTE[p.status]||'#9ca3af';
+      const percent=Math.round((p.days/totalDays)*100);
+      const fromDate=formatDate(p.from);
+      const toDate=formatDate(p.to);
+      const dateRange=p.status==='Done'?toDate:`${fromDate} - ${toDate}`;
+      return `<span class="timeline-segment" style="flex:${width};background:${color}" data-tooltip="${p.status}: ${dateRange} (${p.days} day${p.days===1?'':'s'}, ${percent}%)"><span style="font-size:11px;line-height:1.2;">${dateRange}</span></span>`;
+    }).join('');
+    const legendEntries=[];
+    const seen=new Set();
+    statusPeriods.forEach(p=>{
+      if(!seen.has(p.status)){
+        seen.add(p.status);
+        legendEntries.push(`<span class="status-chip"><span class="status-dot" style="background:${TICKET_STATUS_PALETTE[p.status]||'#9ca3af'}"></span>${p.status}</span>`);
+      }
+    });
+    const devs=[...new Set(ticket.entries.map(e=>e.developer_name).filter(Boolean))];
+    const content=`<div class="ticket-insight-card"><div class="ticket-insight-header"><div class="status-badge">${currentStatus}</div><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div class="type-badge">${ticket.ticket_type}</div>${devs.length?`<span style="font-size:11px;color:var(--text-faint);">${devs.join(', ')}</span>`:''}</div></div><div class="ticket-timeline">${segments}</div><div class="status-legend">${legendEntries.join('')}</div></div>`;
+    return `<tr><td class="ticket-link" title="Type: ${ticket.ticket_type} | Click to expand" onclick="toggleTicketInsight('${ticketId}')"><strong>${ticket.ticket_number}</strong> <span style="font-size:12px;color:var(--text-faint);">(click to expand)</span></td></tr><tr id="${ticketId}" class="ticket-insight-row hidden"><td>${content}</td></tr>`;
+  }).join('');
+}
+
+function renderWeeklyTicketInsights(rows){
+  const tbody=document.getElementById('weekly-ticket-tbody');
+  const summaryEl=document.getElementById('weekly-ticket-summary');
+  if(!tbody) return;
+  tbody.innerHTML=renderTicketInsightAccordion(rows,'weekly-ticket');
+  if(summaryEl){
+    const uniqueTickets=new Set((rows||[]).map(r=>(r.ticket_number||'Unknown Ticket').toString())).size;
+    summaryEl.textContent = uniqueTickets ? `${uniqueTickets} ticket${uniqueTickets===1?'':'s'} in this view — click any ticket to see its status timeline.` : 'No tickets found for this date range.';
+  }
+}
+
+function showAllWeeklyTickets(){
+  renderWeeklyTicketInsights(weeklyAllTicketRows);
+  const dayWrap=document.getElementById('weekly-ticket-day-wrap');
+  if(dayWrap) dayWrap.style.display='none';
+}
+async function loadWeekly(){
+  const now=new Date();const day=now.getDay();
+  const monday=new Date(now);monday.setDate(now.getDate()-(day===0?6:day-1));monday.setHours(0,0,0,0);
+  const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);
+  const defaultFrom=monday.toISOString().split('T')[0];
+  const defaultTo=sunday.toISOString().split('T')[0];
+  const startInput=document.getElementById('weekly-start');
+  const endInput=document.getElementById('weekly-end');
+  if(startInput && !startInput.value) startInput.value = defaultFrom;
+  if(endInput && !endInput.value) endInput.value = defaultTo;
+  let from = startInput && startInput.value ? startInput.value : defaultFrom;
+  let to = endInput && endInput.value ? endInput.value : defaultTo;
+  if(new Date(from) > new Date(to)) [from,to] = [to,from];
+  const rangeDesc=document.getElementById('weekly-range-desc');
+  if(rangeDesc) rangeDesc.textContent = `Showing insights from ${new Date(from).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})} to ${new Date(to).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}.`;
+  const s=getSettings();loading(true);
+  const devSelect=document.getElementById('weekly-developer');
+  const selectedDev=devSelect ? devSelect.value : '';
+  // Build set of registered user names from the dropdown options
+  const registeredNames=devSelect ? Array.from(devSelect.options).map(o=>o.value).filter(Boolean) : [];
+  try{
+    const rows=await sbFetch(TABLE+'?log_date=gte.'+from+'&log_date=lte.'+to+'&order=log_date.asc',{headers:{'Prefer':'return=representation'}});
+    // Always restrict to registered users only
+    const registeredSet=new Set(registeredNames);
+    const baseRows=(rows||[]).filter(r=>registeredSet.has(r.developer_name));
+    const filteredRows=selectedDev ? baseRows.filter(r=>r.developer_name===selectedDev) : baseRows;
+    if(!filteredRows||filteredRows.length===0){document.getElementById('insights-cont').innerHTML='<div class="insight"><div class="insight-icon">📭</div><p>No data logged for the selected filter.</p></div>';weeklyAllTicketRows=[];renderWeeklyTicketInsights([]);const dw=document.getElementById('weekly-ticket-day-wrap');if(dw)dw.style.display='none';return;}
+    const byDate={};filteredRows.forEach(r=>{if(!byDate[r.log_date])byDate[r.log_date]=[];byDate[r.log_date].push(r);});
+    const dates=Object.keys(byDate).sort();
+    const labels=dates.map(d=>{const dt=new Date(d);return DAYS[dt.getDay()===0?6:dt.getDay()-1];});
+    const ticketData=dates.map(d=>byDate[d].reduce((s,r)=>s+(r.ticket_closed||0),0));
+    const tokenData=dates.map(d=>byDate[d].reduce((s,r)=>s+(r.tokens_used||0),0));
+    const costData=dates.map((d,i)=>ticketData[i]>0?parseFloat((tokenData[i]/1000*s.costPer1K/ticketData[i]).toFixed(4)):0);
+    const totTickets=filteredRows.reduce((s,r)=>s+(r.ticket_closed||0),0);
+    const totTokens=filteredRows.reduce((s,r)=>s+(r.tokens_used||0),0);
+    const totReopened=filteredRows.reduce((s,r)=>s+(r.ticket_reopened||0),0);
+    const totPrs=filteredRows.reduce((s,r)=>s+(r.prs_merged||0),0);
+    const totManualHours=filteredRows.reduce((s,r)=>s+(r.manual_estimated_hours||0),0);
+    const totWorkedHours=filteredRows.reduce((s,r)=>s+(r.hours_worked||0),0);
+    const timeSavedTotal=totManualHours-totWorkedHours;
+    const totCost=totTokens/1000*s.costPer1K;
+    const avgCPT=totTickets>0?totCost/totTickets:0;
+    const qf=totTickets>0?1-totReopened/totTickets:1;
+    document.getElementById('wm-tickets').textContent=totTickets;
+    document.getElementById('wm-cost').textContent='$'+totCost.toFixed(2);
+    document.getElementById('wm-tokens').textContent=(totTokens/1000).toFixed(1)+'K';
+    document.getElementById('wm-cpt').textContent=avgCPT>0?'$'+avgCPT.toFixed(3):'—';
+    document.getElementById('wm-qf').textContent=Math.round(qf*100)+'%';
+    document.getElementById('wm-prs').textContent=totPrs;
+    document.getElementById('wm-time-saved').textContent=timeSavedTotal.toFixed(1);
+    document.getElementById('wm-cpt-card').className='metric-card'+(avgCPT===0?'':avgCPT<=s.targetCPT?' good':' warn');
+    document.getElementById('wm-qf-card').className='metric-card'+(qf>=0.9?' good':' warn');
+
+    const devSummary={};
+    filteredRows.forEach(r=>{
+      const name=r.developer_name||'Unknown';
+      if(!devSummary[name]) devSummary[name]={
+        developer_name:name,
+        domain:r.domain||'',
+        ticket_closed:0,
+        tokens_used:0,
+        prs_merged:0,
+        ticket_reopened:0,
+        manual_estimated_hours:0,
+        hours_worked:0
+      };
+      devSummary[name].ticket_closed += r.ticket_closed||0;
+      devSummary[name].tokens_used += r.tokens_used||0;
+      devSummary[name].prs_merged += r.prs_merged||0;
+      devSummary[name].ticket_reopened += r.ticket_reopened||0;
+      devSummary[name].manual_estimated_hours += r.manual_estimated_hours||0;
+      devSummary[name].hours_worked += r.hours_worked||0;
+    });
+
+    const weeklyDevTbody=document.getElementById('weekly-dev-tbody');
+    weeklyDevTbody.innerHTML=Object.values(devSummary).sort((a,b)=>a.developer_name.localeCompare(b.developer_name)).map(r=>{
+      const cost=(r.tokens_used||0)/1000*(s.costPer1K||0);
+      const timeSaved=r.manual_estimated_hours-r.hours_worked;
+      const closedCount=r.ticket_closed||0;
+      const qf=closedCount>0?1-(r.ticket_reopened||0)/closedCount:1;
+      const qfPct=Math.round(qf*100);
+      const barWidth=Math.max(0,Math.min(100,qfPct));
+      const cls=qfPct>=90?'high':qfPct>=70?'mid':'low';
+      return `
+      <tr>
+        <td class="dev-name">${r.developer_name}</td>
+        <td>${r.domain?`<span class="dtag ${domainClass(r.domain)}">${r.domain}</span>`:'—'}</td>
+        <td class="mono">${r.ticket_closed||0}</td>
+        <td class="mono">${((r.tokens_used||0)/1000).toFixed(1)}K</td>
+        <td class="mono">$${cost.toFixed(3)}</td>
+        <td class="mono">${r.prs_merged||0}</td>
+        <td class="mono">${r.ticket_reopened||0}</td>
+        <td class="mono">${(timeSaved>=0?'+':'-')+Math.abs(timeSaved).toFixed(1)}</td>
+        <td><span class="eff-wrap"><span class="eff-fill ${cls}" style="width:${barWidth}%"></span></span><span style="font-size:11px;color:var(--text-faint);margin-left:5px;font-family:'Roboto',sans-serif">${qfPct}%</span></td>
+      </tr>`;
+    }).join('');
+
+    const opts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{color:chartAxisColor()},grid:{color:chartGridColor()}},x:{ticks:{color:chartAxisColor()},grid:{display:false}}}};
+
+    // lightweight data-label plugin
+    const dataLabelPlugin = {
+      id: 'dataLabelPlugin',
+      afterDatasetsDraw(chart, args, pluginOptions){
+        const {ctx, data} = chart;
+        ctx.save();
+        const opts = pluginOptions || {};
+        ctx.font = (opts.fontSize||11) + 'px Roboto, sans-serif';
+        ctx.fillStyle = opts.color || chartLabelColor();
+        ctx.textAlign = 'center';
+        data.datasets.forEach((dataset, dsIndex)=>{
+          const meta = chart.getDatasetMeta(dsIndex);
+          meta.data.forEach((element, index)=>{
+            const value = dataset.data[index];
+            if(value===null||value===undefined) return;
+            const pos = element.tooltipPosition();
+            const text = (typeof value === 'number' && Math.abs(value) >= 1000) ? (Math.round(value/100)/10)+'K' : (Number.isInteger(value)?value:parseFloat(value).toFixed(1));
+            ctx.fillText(text, pos.x, pos.y - 6);
+          });
+        });
+        ctx.restore();
+      }
+    };
+
+    // render ticket-level developers and tickets for a clicked day
+    function showDayDetails(day){
+      const rowsForDay = filteredRows.filter(r=>r.log_date===day);
+      const dayEl = document.getElementById('weekly-ticket-day');
+      const dayWrap = document.getElementById('weekly-ticket-day-wrap');
+      if(!dayEl||!dayWrap) return;
+      dayEl.textContent = formatDevDate(day);
+      dayWrap.style.display = 'inline-flex';
+      renderWeeklyTicketInsights(rowsForDay);
+    }
+    weeklyAllTicketRows = filteredRows;
+    renderWeeklyTicketInsights(filteredRows);
+    { const dw=document.getElementById('weekly-ticket-day-wrap'); if(dw) dw.style.display='none'; }
+
+    if(ticketChartInst)ticketChartInst.destroy();
+    ticketChartInst=new Chart(document.getElementById('ticketChart'),{type:'bar',data:{labels,datasets:[{label:'Tickets Closed',data:ticketData,backgroundColor:'rgba(64,166,139,0.7)',borderRadius:5,hoverBackgroundColor:'#40a68b'}]},options:{...opts,plugins:{...opts.plugins,legend:{display:true,labels:{color:chartLabelColor(),font:{family:"'Roboto',sans-serif",size:12}}},tooltip:{callbacks:{title:items=>formatDevDate(dates[items[0].dataIndex])}},dataLabelPlugin:{color:chartLabelColor(),fontSize:11}}},plugins:[dataLabelPlugin]});
+    const prOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:chartLabelColor(),font:{family:"'Roboto',sans-serif",size:12}}},tooltip:{callbacks:{title:items=>formatDevDate(dates[items[0].dataIndex])}}},scales:{y:{beginAtZero:true,ticks:{color:chartAxisColor()},grid:{color:chartGridColor()}},x:{ticks:{color:chartAxisColor()},grid:{display:false}}}};
+    const prsRaisedTotals=dates.map(d=>byDate[d].reduce((sum,r)=>sum+(r.prs_raised||0),0));
+    const prsTotals=dates.map(d=>byDate[d].reduce((sum,r)=>sum+(r.prs_merged||0),0));
+    if(devPrChartInst)devPrChartInst.destroy();
+    devPrChartInst=new Chart(document.getElementById('devPrChart'),{type:'line',data:{labels,datasets:[{label:'PRs Merged',data:prsTotals,borderColor:'#40a68b',backgroundColor:'rgba(64,166,139,0.07)',fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:'#40a68b',pointBorderColor:chartBgColor(),pointBorderWidth:2},{label:'PRs Raised',data:prsRaisedTotals,borderColor:'#d9a15a',backgroundColor:'rgba(217,161,90,0.07)',fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:'#d9a15a',pointBorderColor:chartBgColor(),pointBorderWidth:2}]},options:prOpts,plugins:[dataLabelPlugin]});
+    const tokensPerTicket=dates.map((d,i)=>ticketData[i]>0?parseFloat((tokenData[i]/ticketData[i]).toFixed(2)):0);
+    const costPerTicket=dates.map((d,i)=>ticketData[i]>0?parseFloat((costData[i]).toFixed(4)):0);
+    const dualAxisOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:chartLabelColor(),font:{family:"'Roboto',sans-serif",size:12}}},tooltip:{callbacks:{title:items=>formatDevDate(dates[items[0].dataIndex])}},dataLabelPlugin:{color:chartLabelColor(),fontSize:11}},scales:{y:{type:'linear',position:'left',beginAtZero:true,ticks:{color:chartAxisColor(),callback:v=>v.toFixed(0)},grid:{color:chartGridColor()},title:{display:true,text:'Tokens Per Ticket',color:chartLabelColor(),font:{family:"'Roboto',sans-serif",size:11}}},y1:{type:'linear',position:'right',beginAtZero:true,ticks:{color:chartAxisColor(),callback:v=>'$'+v.toFixed(3)},grid:{display:false},title:{display:true,text:'Cost Per Ticket',color:chartLabelColor(),font:{family:"'Roboto',sans-serif",size:11}}},x:{ticks:{color:chartAxisColor()},grid:{display:false}}}};
+    if(devTokenChartInst)devTokenChartInst.destroy();
+    devTokenChartInst=new Chart(document.getElementById('devTokenChart'),{type:'line',data:{labels,datasets:[{label:'Tokens Per Ticket',data:tokensPerTicket,borderColor:'#b47dff',backgroundColor:'rgba(180,125,255,0.07)',fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:'#b47dff',pointBorderColor:chartBgColor(),pointBorderWidth:2,yAxisID:'y'},{label:'Cost Per Ticket',data:costPerTicket,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.07)',fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:'#10b981',pointBorderColor:chartBgColor(),pointBorderWidth:2,yAxisID:'y1'}]},options:dualAxisOpts,plugins:[dataLabelPlugin]});
+    if(costChartInst)costChartInst.destroy();
+    // Build PRs Raised (bar) and Hours Worked (line) dual-axis chart
+    const hoursPerDay = dates.map(d=>byDate[d].reduce((s,r)=>s+(r.hours_worked||0),0));
+    const prHoursOpts = {
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{color:chartLabelColor(),font:{family:"'Roboto',sans-serif",size:12}}},tooltip:{callbacks:{title:items=>formatDevDate(dates[items[0].dataIndex])}},dataLabelPlugin:{color:chartLabelColor(),fontSize:11}},
+      scales:{
+        y:{type:'linear',position:'left',beginAtZero:true,ticks:{color:chartAxisColor(),precision:0},title:{display:true,text:'PRs Raised',color:chartLabelColor(),font:{family:"'Roboto',sans-serif",size:11}},grid:{color:chartGridColor()}},
+        y1:{type:'linear',position:'right',beginAtZero:true,ticks:{color:chartAxisColor()},title:{display:true,text:'Hours Worked',color:chartLabelColor(),font:{family:"'Roboto',sans-serif",size:11}},grid:{display:false}},
+        x:{ticks:{color:chartAxisColor()},grid:{display:false}}
+      }
+    };
+    costChartInst=new Chart(document.getElementById('costChart'),{
+      data:{labels,datasets:[
+        {type:'bar',label:'PRs Raised',data:prsRaisedTotals,backgroundColor:'rgba(59,130,246,0.8)',borderColor:'#3b82f6'},
+        {type:'line',label:'Hours Worked',data:hoursPerDay,borderColor:'#e58a4f',backgroundColor:'rgba(229,138,79,0.07)',fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:'#e58a4f',pointBorderColor:chartBgColor(),pointBorderWidth:2,yAxisID:'y1'}
+      ]},
+      options:prHoursOpts,plugins:[dataLabelPlugin]
+    });
+    const attachClick = (chart, id) => {
+      const canvas = document.getElementById(id);
+      if(!chart||!canvas) return;
+      canvas.onclick = (evt) => {
+        const elems = chart.getElementsAtEventForMode(evt,'nearest',{intersect:true},true);
+        if(elems && elems.length){
+          const idx = elems[0].index;
+          showDayDetails(dates[idx]);
+        }
+      };
+    };
+    attachClick(ticketChartInst,'ticketChart');
+    attachClick(devPrChartInst,'devPrChart');
+    attachClick(devTokenChartInst,'devTokenChart');
+    attachClick(costChartInst,'costChart');
+    const insights=[];
+    const bestIdx=ticketData.indexOf(Math.max(...ticketData));
+    insights.push({icon:'🏆',text:`Best day was <strong>${labels[bestIdx]}</strong> with <strong>${ticketData[bestIdx]}</strong> ticket closed.`});
+    if(totReopened>3)insights.push({icon:'⚠️',text:`Quality alert: <strong>${totReopened}</strong> ticket reopened this week.`});
+    else insights.push({icon:'✅',text:`Quality looks healthy — only <strong>${totReopened}</strong> ticket(s) reopened this week.`});
+    if(ticketData.length>=3){const trend=ticketData[ticketData.length-1]-ticketData[0];if(trend>0)insights.push({icon:'📈',text:`Throughput trending <strong>up</strong> (+${trend} tickets from ${labels[0]} to ${labels[labels.length-1]}).`});else if(trend<0)insights.push({icon:'📉',text:`Throughput trending <strong>down</strong> (${trend} tickets this week).`});}
+    document.getElementById('insights-cont').innerHTML=insights.map(i=>`<div class="insight"><div class="insight-icon">${i.icon}</div><p>${i.text}</p></div>`).join('');
+  }catch(e){document.getElementById('insights-cont').innerHTML=`<div class="insight"><div class="insight-icon">⚠️</div><p style="color:var(--red)">Failed to load insights: ${e.message}</p></div>`;}
+  finally{loading(false);}
+}
+
+function formatDevDate(dateString){
+  const dt=new Date(dateString);
+  return dt.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
+}
+
+async function loadDeveloperInsights(){
+  const select=document.getElementById('developer-select');
+  const fromInput=document.getElementById('developer-start');
+  const toInput=document.getElementById('developer-end');
+  const rangeDesc=document.getElementById('developer-range-desc');
+  const summaryTable=document.getElementById('developer-tbody');
+  const ticketTable=document.getElementById('developer-ticket-tbody');
+  const s=getSettings();
+  if(!select||!fromInput||!toInput||!rangeDesc||!summaryTable||!ticketTable) return;
+  loading(true);
+  try{
+    if(select.options.length===1){
+      const devRows=await sbFetch(TABLE+'?select=developer_name&order=developer_name.asc&distinct=developer_name',{headers:{'Prefer':'return=representation'}});
+      if(devRows&&devRows.length){
+        devRows.forEach(r=>{
+          if(r.developer_name) select.insertAdjacentHTML('beforeend',`<option value="${r.developer_name}">${r.developer_name}</option>`);
+        });
+      }
+    }
+    const now=new Date();const day=now.getDay();
+    const monday=new Date(now);monday.setDate(now.getDate()-(day===0?6:day-1));monday.setHours(0,0,0,0);
+    const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);
+    const defaultFrom=monday.toISOString().split('T')[0];
+    const defaultTo=sunday.toISOString().split('T')[0];
+    if(!fromInput.value) fromInput.value=defaultFrom;
+    if(!toInput.value) toInput.value=defaultTo;
+    let from=fromInput.value||defaultFrom;
+    let to=toInput.value||defaultTo;
+    if(new Date(from)>new Date(to)) [from,to]=[to,from];
+    const selectedDev=select.value;
+    if(!selectedDev){
+      rangeDesc.textContent='Pick a developer and date range to load insights.';
+      document.getElementById('dev-prs').textContent='—';
+      document.getElementById('dev-tokens').textContent='—';
+      document.getElementById('dev-time-saved').textContent='—';
+      document.getElementById('dev-prompts').textContent='—';
+      document.getElementById('dev-qf').textContent='—';
+      document.getElementById('dev-qf-card').className='metric-card';
+      summaryTable.innerHTML='<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">👤</div><div class="empty-state-title">Select a developer</div><div class="empty-state-sub">Choose a developer from the dropdown above to view their insights.</div></div></td></tr>';
+      ticketTable.innerHTML='<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">🎫</div><div class="empty-state-title">No tickets to display</div><div class="empty-state-sub">Ticket insights will appear once a developer is selected.</div></div></td></tr>';
+      if(devPrChartInst) devPrChartInst.destroy();
+      if(devTokenChartInst) devTokenChartInst.destroy();
+      return;
+    }
+    rangeDesc.textContent=`Showing ${selectedDev} from ${new Date(from).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})} to ${new Date(to).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}.`;
+    const rows=await sbFetch(TABLE+'?developer_name=eq.'+encodeURIComponent(selectedDev)+'&log_date=gte.'+from+'&log_date=lte.'+to+'&order=log_date.asc',{headers:{'Prefer':'return=representation'}});
+    if(!rows||rows.length===0){
+      document.getElementById('dev-prs').textContent='0';
+      document.getElementById('dev-tokens').textContent='0.0K';
+      document.getElementById('dev-time-saved').textContent='0.0';
+      document.getElementById('dev-prompts').textContent='0';
+      document.getElementById('dev-qf').textContent='—';
+      document.getElementById('dev-qf-card').className='metric-card';
+      summaryTable.innerHTML='<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">No records found</div><div class="empty-state-sub">This developer has no logs in the selected date range.</div></div></td></tr>';
+      ticketTable.innerHTML='<tr><td><div class="empty-state"><div class="empty-state-icon">🎫</div><div class="empty-state-title">No ticket data available</div><div class="empty-state-sub">No ticket insights found for this developer and date range.</div></div></td></tr>';
+      if(devPrChartInst) devPrChartInst.destroy();
+      if(devTokenChartInst) devTokenChartInst.destroy();
+      return;
+    }
+    const grouped={};
+    rows.forEach(r=>{
+      const key=r.log_date||'';
+      if(!grouped[key]) grouped[key]=[];
+      grouped[key].push(r);
+    });
+    const dates=Object.keys(grouped).sort();
+    const labels=dates.map(d=>formatDevDate(d));
+    const prsTotals=dates.map(d=>grouped[d].reduce((sum,r)=>sum+(r.prs_merged||0),0));
+    const prsRaisedTotals=dates.map(d=>grouped[d].reduce((sum,r)=>sum+(r.prs_raised||0),0));
+    const tokenTotals=dates.map(d=>grouped[d].reduce((sum,r)=>sum+(r.tokens_used||0),0));
+    const manualTotals=rows.reduce((sum,r)=>sum+(r.manual_estimated_hours||0),0);
+    const hoursTotals=rows.reduce((sum,r)=>sum+(r.hours_worked||0),0);
+    const timeSaved=manualTotals-hoursTotals;
+    const totPrs=rows.reduce((sum,r)=>sum+(r.prs_merged||0),0);
+    const totTokens=rows.reduce((sum,r)=>sum+(r.tokens_used||0),0);
+    const totPrompts=rows.reduce((sum,r)=>sum+(r.prompts_count||0),0);
+    const totReopened=rows.reduce((sum,r)=>sum+(r.ticket_reopened||0),0);
+    const totTickets=rows.reduce((sum,r)=>sum+(r.ticket_closed||0),0);
+    const qf=totTickets>0?Math.round((1-(totReopened/totTickets))*100):100;
+    document.getElementById('dev-prs').textContent=totPrs;
+    document.getElementById('dev-tokens').textContent=(totTokens/1000).toFixed(1)+'K';
+    document.getElementById('dev-time-saved').textContent=timeSaved.toFixed(1);
+    document.getElementById('dev-prompts').textContent=totPrompts;
+    document.getElementById('dev-qf').textContent=qf+'%';
+    document.getElementById('dev-qf-card').className='metric-card'+(qf>=90?' good':' warn');
+    const opts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{color:chartAxisColor()},grid:{color:chartGridColor()}},x:{ticks:{color:chartAxisColor()},grid:{display:false}}}};
+    const prOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:chartLabelColor(),font:{family:"'Roboto',sans-serif",size:12}}}},scales:{y:{beginAtZero:true,ticks:{color:chartAxisColor()},grid:{color:chartGridColor()}},x:{ticks:{color:chartAxisColor()},grid:{display:false}}}};
+    const prScatterOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:(items)=>items[0]?.raw?.label||'',label:(item)=>[`PRs Raised: ${item.raw.x}`,`PRs Merged: ${item.raw.y}`]}}},scales:{y:{title:{display:true,text:'PRs Merged',color:chartLabelColor(),font:{family:"'Roboto',sans-serif",size:12}},beginAtZero:true,ticks:{color:chartAxisColor(),precision:0},grid:{color:chartGridColor()}},x:{type:'linear',title:{display:true,text:'PRs Raised',color:chartLabelColor(),font:{family:"'Roboto',sans-serif",size:12}},beginAtZero:true,ticks:{color:chartAxisColor(),precision:0},grid:{display:false}}}};
+    if(devPrChartInst) devPrChartInst.destroy();
+    const prPoints=dates.map((d,i)=>({x:prsRaisedTotals[i],y:prsTotals[i],label:labels[i]}));
+    devPrChartInst=new Chart(document.getElementById('devPrChart'),{type:'line',data:{datasets:[
+      {data:prPoints,borderColor:'#40a68b',backgroundColor:'rgba(64,166,139,0.07)',fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:'#40a68b',pointBorderColor:chartBgColor(),pointBorderWidth:2}
+    ]},options:prScatterOpts});
+    if(devTokenChartInst) devTokenChartInst.destroy();
+    devTokenChartInst=new Chart(document.getElementById('devTokenChart'),{type:'line',data:{labels,datasets:[{data:tokenTotals,borderColor:'#b47dff',backgroundColor:'rgba(180,125,255,0.07)',fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:'#b47dff',pointBorderColor:chartBgColor(),pointBorderWidth:2}]},options:{...opts,scales:{...opts.scales,y:{...opts.scales.y,ticks:{color:chartAxisColor(),callback:v=>v>999?Math.round(v/1000)+'K':v}}}}});
+    summaryTable.innerHTML=dates.map(d=>{
+      const dayRows=grouped[d];
+      const tickets=dayRows.reduce((sum,r)=>sum+(r.ticket_closed||0),0);
+      const prs=dayRows.reduce((sum,r)=>sum+(r.prs_merged||0),0);
+      const tokens=dayRows.reduce((sum,r)=>sum+(r.tokens_used||0),0);
+      const prompts=dayRows.reduce((sum,r)=>sum+(r.prompts_count||0),0);
+      const manual=dayRows.reduce((sum,r)=>sum+(r.manual_estimated_hours||0),0);
+      const hours=dayRows.reduce((sum,r)=>sum+(r.hours_worked||0),0);
+      const cost=(tokens/1000)*s.costPer1K;
+      const notes=dayRows.map(r=>r.notes).filter(Boolean).join(' | ');
+      return `<tr><td class="mono">${d}</td><td class="mono">${tickets}</td><td class="mono">${prs}</td><td class="mono">${(tokens/1000).toFixed(1)}K</td><td class="mono">${prompts}</td><td class="mono">${(manual-hours).toFixed(1)}</td><td class="mono">$${cost.toFixed(2)}</td><td title="${notes||'—'}" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${notes||'—'}</td></tr>`;
+    }).join('');
+    const tickets={};
+    rows.forEach(r=>{
+      const ticketKey=(r.ticket_number||'Unknown Ticket').toString();
+      if(!tickets[ticketKey]) tickets[ticketKey]={ticket_number:ticketKey,ticket_type:r.ticket_type||'—',entries:[]};
+      tickets[ticketKey].entries.push(r);
+    });
+    ticketTable.innerHTML=Object.values(tickets).map((ticket,i)=>{
+      const entries=ticket.entries.sort((a,b)=>new Date(a.log_date)-new Date(b.log_date));
+      let statusPeriods=[];
+      let activeStatus=null;
+      let activeDate=null;
+      entries.forEach(entry=>{
+        const status=entry.ticket_status||'Unknown';
+        if(activeStatus===null){
+          activeStatus=status;
+          activeDate=entry.log_date;
+          return;
+        }
+        if(status!==activeStatus){
+          const toDate=new Date(entry.log_date);
+          const days=Math.max(1,Math.round((toDate-new Date(activeDate))/86400000));
+          statusPeriods.push({status:activeStatus,from:activeDate,to:entry.log_date,days});
+          activeStatus=status;
+          activeDate=entry.log_date;
+        }
+      });
+      if(activeStatus!==null){
+        const todayDate=new Date();
+        todayDate.setHours(0,0,0,0);
+        const finalTo=activeStatus==='Done'?new Date(activeDate):todayDate;
+        const days=activeStatus==='Done'?1:Math.max(1,Math.round((finalTo-new Date(activeDate))/86400000));
+        const toStr=activeStatus==='Done'?activeDate:finalTo.toISOString().split('T')[0];
+        statusPeriods.push({status:activeStatus,from:activeDate,to:toStr,days});
+      }
+      const ticketPrs=entries.reduce((sum,r)=>sum+(r.prs_merged||0),0);
+      const ticketTokens=entries.reduce((sum,r)=>sum+(r.tokens_used||0),0);
+      const ticketPrompts=entries.reduce((sum,r)=>sum+(r.prompts_count||0),0);
+      const ticketManual=entries.reduce((sum,r)=>sum+(r.manual_estimated_hours||0),0);
+      const ticketHours=entries.reduce((sum,r)=>sum+(r.hours_worked||0),0);
+      const ticketCost=(ticketTokens/1000)*s.costPer1K;
+      const currentStatus=entries[entries.length-1].ticket_status||'Unknown';
+      const ticketId=`ticket-${i}`;
+      const totalDays=statusPeriods.reduce((sum,p)=>sum+p.days,0)||1;
+      const palettes={
+        'Backlog':'#e2e8f0','Analysis in progress':'#c7d8ff','Development in progress':'#e9dbff','PR raised':'#fff1c4','Merged in DEV-1':'#cdf7de','Ready for Test':'#c5f0ff','Testing in progress':'#ffd7f5','Blocked':'#ffccdb','Reopened':'#ffe8a8','On Hold':'#d6d6ff','Done':'#bef3c7','Unknown':'#9ca3af'
+      };
+      const segments=statusPeriods.map(p=>{
+        const width=Math.max(6,(p.days/totalDays)*100);
+        const color=palettes[p.status]||'#9ca3af';
+        const percent=Math.round((p.days/totalDays)*100);
+        const formatDate=(dateStr)=>{const d=new Date(dateStr);return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});};
+        const fromDate=formatDate(p.from);
+        const toDate=formatDate(p.to);
+        const dateRange=p.status==='Done'?toDate:`${fromDate} - ${toDate}`;
+        return `<span class="timeline-segment" style="flex:${width};background:${color};color:${p.status==='Backlog'?'#0f172a':'#0f172a'}" data-tooltip="${p.status}: ${dateRange} (${p.days} day${p.days===1?'':'s'}, ${percent}%)"><span style="font-size:11px;line-height:1.2;">${dateRange}</span></span>`;
+      }).join('');
+      const legendEntries=[];
+      const seen=new Set();
+      statusPeriods.forEach(p=>{
+        if(!seen.has(p.status)){
+          seen.add(p.status);
+          legendEntries.push(`<span class="status-chip"><span class="status-dot" style="background:${palettes[p.status]||'#9ca3af'}"></span>${p.status}</span>`);
+        }
+      });
+      const content=`<div class="ticket-insight-card"><div class="ticket-insight-header"><div class="status-badge">${currentStatus}</div><div class="type-badge">${ticket.ticket_type}</div></div><div class="ticket-timeline">${segments}</div><div class="status-legend">${legendEntries.join('')}</div></div>`;
+      return `<tr><td class="ticket-link" title="Type: ${ticket.ticket_type} | Click to expand" onclick="toggleTicketInsight('${ticketId}')"><strong>${ticket.ticket_number}</strong> <span style="font-size:12px;color:var(--text-faint);">(click to expand)</span></td></tr><tr id="${ticketId}" class="ticket-insight-row hidden"><td>${content}</td></tr>`;
+    }).join('');
+  }catch(e){
+    summaryTable.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-title">Failed to load data</div><div class="empty-state-sub">${e.message}</div></div></td></tr>`;
+    ticketTable.innerHTML='<tr><td><div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-title">Unable to load ticket insights</div></div></td></tr>';
+  }finally{loading(false);}
+}
+
+function toggleTicketInsight(id){
+  const row=document.getElementById(id);
+  if(!row) return;
+  row.classList.toggle('hidden');
+}
+ 
+async function loadLeaderboard(){
+  const now=new Date();const day=now.getDay();
+  const monday=new Date(now);monday.setDate(now.getDate()-(day===0?6:day-1));monday.setHours(0,0,0,0);
+  const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);
+  const defaultFrom=monday.toISOString().split('T')[0];
+  const defaultTo=sunday.toISOString().split('T')[0];
+  const startInput=document.getElementById('lb-start');
+  const endInput=document.getElementById('lb-end');
+  if(startInput && !startInput.value) startInput.value = defaultFrom;
+  if(endInput && !endInput.value) endInput.value = defaultTo;
+  let from = startInput && startInput.value ? startInput.value : defaultFrom;
+  let to = endInput && endInput.value ? endInput.value : defaultTo;
+  if(new Date(from) > new Date(to)) [from,to] = [to,from];
+  const rangeDesc=document.getElementById('lb-range-desc');
+  if(rangeDesc) rangeDesc.textContent = `Showing workload from ${new Date(from).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})} to ${new Date(to).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}.`;
+  loading(true);
+  const lbRows=document.getElementById('lb-rows');
+  lbRows.innerHTML='<div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-title">Loading workload data</div><div class="empty-state-sub">Fetching ticket data for the selected range…</div></div>';
+  try{
+    const rows=await sbFetch(TABLE+'?log_date=gte.'+from+'&log_date=lte.'+to,{headers:{'Prefer':'return=representation'}});
+
+    // Get registered user names from the weekly-developer dropdown (populated from profiles table)
+    const devDropdown=document.getElementById('weekly-developer');
+    const registeredNames=devDropdown ? new Set(Array.from(devDropdown.options).map(o=>o.value).filter(Boolean)) : new Set();
+
+    // Filter rows to only registered users
+    const filteredRows=(rows||[]).filter(r=>!registeredNames.size||registeredNames.has(r.developer_name));
+
+    if(!filteredRows.length){lbRows.innerHTML='<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">No data found</div><div class="empty-state-sub">No registered developers have logged activity in this date range.</div></div>';return;}
+
+    const byDev={};
+    filteredRows.forEach(r=>{
+      const devName=r.developer_name;
+      if(!devName) return;
+      if(!byDev[devName]) byDev[devName]={name:devName,domain:r.domain||'',tickets:{},tokens:0,reopened:0,prs:0,days:0};
+      const d=byDev[devName];
+      const ticketKey=(r.ticket_number||'').toString().toLowerCase().trim();
+      if(ticketKey){
+        if(!d.tickets[ticketKey]||new Date(r.log_date)>=new Date(d.tickets[ticketKey].log_date||'')){
+          d.tickets[ticketKey]={status:(r.ticket_status||'').trim(),log_date:r.log_date||'',displayId:r.ticket_number};
+        }
+      }
+      d.tokens+=(r.tokens_used||0);
+      d.reopened+=(r.ticket_reopened||0);
+      d.prs+=(r.prs_merged||0);
+      d.days++;
+    });
+
+    const AVATAR_COLORS=['#40a68b','#b47dff','#ffb830','#fb923c','#f472b6','#60a5fa','#34d399','#f87171','#a78bfa','#fbbf24','#4ade80','#38bdf8','#e879f9','#fb7185','#a3e635','#2dd4bf'];
+    let allDevs=Object.values(byDev).map((d,idx)=>{
+      const allTickets=Object.values(d.tickets);
+      const total=allTickets.length;
+      const done=allTickets.filter(t=>t.status.toLowerCase()==='done').length;
+      const active=total-done;
+      const pct=total>0?Math.round((done/total)*100):0;
+      const qf=total>0?1-d.reopened/total:1;
+      d.eff=d.tokens>0?(total/(d.tokens/1000))*qf:0;
+      d.totalTickets=total;
+      d.doneTickets=done;
+      d.activeTickets=active;
+      d.donePct=pct;
+      d.avatarColor=AVATAR_COLORS[idx%AVATAR_COLORS.length];
+      return d;
+    });
+    allDevs.sort((a,b)=>a.name.localeCompare(b.name));
+
+    window._wlAllDevs=allDevs;
+    window._wlActiveFilter=new Set();
+
+    const filterBar=document.getElementById('lb-filter-bar');
+    const pillsContainer=document.getElementById('lb-filter-pills');
+    filterBar.style.display='flex';
+    const allPill=`<span class="dev-pill all-pill active" id="lb-pill-all" onclick="wlToggleAll()"># All</span> `;
+    const devPills=allDevs.map(d=>{
+      const parts=d.name.trim().split(' ');
+      const initials=((parts[0]||'')[0]||'')+((parts[1]||'')[0]||'');
+      const safeId=d.name.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+      const safeName=d.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      return `<span class="dev-pill" id="lb-pill-${safeId}" onclick="wlToggleDev('${safeName}')">${initials.toUpperCase()} ${parts[0]}</span>`;
+    }).join(' ');
+    pillsContainer.innerHTML=allPill+devPills;
+
+    wlRenderCards();
+  }catch(e){lbRows.innerHTML=`<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-title">Failed to load workload</div><div class="empty-state-sub">${e.message}</div></div>`;}
+  finally{loading(false);}
+}
+
+function wlRenderCards(){
+  const lbRows=document.getElementById('lb-rows');
+  const devs=window._wlAllDevs||[];
+  const filter=window._wlActiveFilter||new Set();
+  const visible=filter.size===0?devs:devs.filter(d=>filter.has(d.name));
+  if(!visible.length){lbRows.innerHTML='<div class="empty-state"><div class="empty-state-icon">🔎</div><div class="empty-state-title">No developers match the filter</div><div class="empty-state-sub">Try selecting a different developer or clearing the filter.</div></div>';return;}
+  lbRows.innerHTML=visible.map(d=>{
+    const progCls=d.donePct>=75?'high':d.donePct>=40?'mid':'low';
+    const parts=d.name.trim().split(' ');
+    const initials=((parts[0]||'')[0]||'')+((parts[1]||'')[0]||'');
+    const emailGuess=(window._devEmailMap&&window._devEmailMap[d.name]) || (d.name.toLowerCase().replace(/\s+/g,'')+'@cloudangles.zilo.co.uk');
+    const safeName=d.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<div class="lb-card" style="cursor:pointer" onclick="wlOpenModal('${safeName}')">
+      <div class="lb-card-header">
+        <div class="lb-avatar" style="background:${d.avatarColor}">${initials.toUpperCase()}</div>
+        <div>
+          <div class="lb-card-name">${d.name}</div>
+          <div class="lb-card-email">${emailGuess}</div>
+        </div>
+      </div>
+      <div class="lb-card-stats">
+        <div class="lb-stat-box"><div class="lb-stat-val total">${d.totalTickets}</div><div class="lb-stat-label">TOTAL</div></div>
+        <div class="lb-stat-box"><div class="lb-stat-val active">${d.activeTickets}</div><div class="lb-stat-label">ACTIVE</div></div>
+        <div class="lb-stat-box"><div class="lb-stat-val done">${d.doneTickets}</div><div class="lb-stat-label">DONE</div></div>
+        <div class="lb-stat-box"><div class="lb-stat-val pct">${d.donePct}%</div><div class="lb-stat-label">DONE%</div></div>
+      </div>
+      <div class="lb-completion-label">Completion</div>
+      <div class="lb-prog-bar"><div class="lb-prog-fill ${progCls}" style="width:${d.donePct}%"></div></div>
+      <div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:10px;color:var(--text-faint)">${d.domain||'--'} &middot; ${d.days}d logged</span>
+        <span style="font-size:10px;color:var(--cyan)">View tickets &#x2192;</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function wlToggleAll(){
+  window._wlActiveFilter=new Set();
+  document.querySelectorAll('.dev-pill').forEach(p=>p.classList.remove('active'));
+  const allPill=document.getElementById('lb-pill-all');
+  if(allPill) allPill.classList.add('active');
+  wlRenderCards();
+}
+
+function wlToggleDev(name){
+  const filter=window._wlActiveFilter;
+  const allPill=document.getElementById('lb-pill-all');
+  const safeId=name.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+  const pill=document.getElementById('lb-pill-'+safeId);
+  if(filter.has(name)){filter.delete(name);}else{filter.add(name);}
+  if(filter.size===0){
+    if(allPill) allPill.classList.add('active');
+    document.querySelectorAll('.dev-pill:not(.all-pill)').forEach(p=>p.classList.remove('active'));
+  }else{
+    if(allPill) allPill.classList.remove('active');
+    if(pill) pill.classList.toggle('active',filter.has(name));
+  }
+  wlRenderCards();
+}
+
+const STATUS_STYLE={
+  'Done':{bg:'rgba(64,166,139,0.15)',color:'#40a68b'},
+  'Blocked':{bg:'rgba(255,77,106,0.15)',color:'#ff4d6a'},
+  'PR raised':{bg:'rgba(255,184,48,0.15)',color:'#ffb830'},
+  'Merged in DEV-1':{bg:'rgba(64,166,139,0.1)',color:'#7fd9c4'},
+  'Testing in progress':{bg:'rgba(244,114,182,0.15)',color:'#f472b6'},
+  'Development in progress':{bg:'rgba(180,125,255,0.15)',color:'#b47dff'},
+  'Analysis in progress':{bg:'rgba(96,165,250,0.15)',color:'#60a5fa'},
+  'Ready for Test':{bg:'rgba(96,165,250,0.12)',color:'#38bdf8'},
+  'Reopened':{bg:'rgba(255,184,48,0.12)',color:'#fb923c'},
+  'On Hold':{bg:'rgba(156,163,175,0.15)',color:'#9ca3af'},
+  'Backlog':{bg:'rgba(156,163,175,0.1)',color:'#9ca3af'},
+};
+function statusStyle(s){return STATUS_STYLE[s]||{bg:'rgba(156,163,175,0.12)',color:'#9ca3af'};}
+
+function wlFormatDate(dateStr){
+  if(!dateStr) return '';
+  const d=new Date(dateStr+'T00:00:00');
+  if(isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+}
+
+function wlOpenModal(name){
+  const devs=window._wlAllDevs||[];
+  const d=devs.find(x=>x.name===name);
+  if(!d) return;
+  const parts=d.name.trim().split(' ');
+  const initials=((parts[0]||'')[0]||'')+((parts[1]||'')[0]||'');
+  document.getElementById('wl-modal-avatar').style.background=d.avatarColor;
+  document.getElementById('wl-modal-avatar').textContent=initials.toUpperCase();
+  document.getElementById('wl-modal-title').textContent=d.name;
+  document.getElementById('wl-modal-sub').textContent=d.totalTickets+' tickets total \u00b7 '+d.activeTickets+' active \u00b7 '+d.doneTickets+' done';
+
+  const ticketEntries=Object.entries(d.tickets);
+  const activeTickets=ticketEntries.filter(([,t])=>t.status.toLowerCase()!=='done');
+  const doneTickets=ticketEntries.filter(([,t])=>t.status.toLowerCase()==='done');
+
+  let html='';
+  if(activeTickets.length){
+    html+='<div class="wl-section-title">Active Tickets ('+activeTickets.length+')</div><div class="wl-ticket-list">';
+    activeTickets.sort((a,b)=>a[0].localeCompare(b[0])).forEach(([key,t])=>{
+      const ss=statusStyle(t.status);
+      html+='<div class="wl-ticket-row">'
+        +'<span class="wl-ticket-id">'+(t.displayId||key.toUpperCase())+'</span>'
+        +'<span class="wl-ticket-status" style="background:'+ss.bg+';color:'+ss.color+'">'+(t.status||'Unknown')+'</span>'
+        +'<span class="wl-ticket-date">'+wlFormatDate(t.log_date)+'</span>'
+        +'</div>';
+    });
+    html+='</div>';
+  }else{
+    html+='<div class="wl-section-title">Active Tickets</div><div class="wl-empty" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:24px 0"><span style="font-size:22px">✅</span><span style="font-size:13px;font-weight:600;color:var(--green)">All tickets complete</span><span style="font-size:11px;color:var(--text-faint)">No active work items for this developer.</span></div>';
+  }
+
+  if(doneTickets.length){
+    html+='<div class="wl-section-title" style="margin-top:4px">Done Tickets ('+doneTickets.length+')</div><div class="wl-ticket-list">';
+    doneTickets.sort((a,b)=>a[0].localeCompare(b[0])).forEach(([key,t])=>{
+      const ss=statusStyle('Done');
+      html+='<div class="wl-ticket-row" style="opacity:0.65">'
+        +'<span class="wl-ticket-id">'+(t.displayId||key.toUpperCase())+'</span>'
+        +'<span class="wl-ticket-status" style="background:'+ss.bg+';color:'+ss.color+'">Done</span>'
+        +'<span class="wl-ticket-date">'+wlFormatDate(t.log_date)+'</span>'
+        +'</div>';
+    });
+    html+='</div>';
+  }
+
+  document.getElementById('wl-modal-body').innerHTML=html;
+  document.getElementById('wl-modal-backdrop').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function wlModalClose(e){
+  if(e && e.target!==document.getElementById('wl-modal-backdrop')) return;
+  document.getElementById('wl-modal-backdrop').classList.remove('open');
+  document.body.style.overflow='';
+}
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){document.getElementById('wl-modal-backdrop').classList.remove('open');document.body.style.overflow='';}});
+
+
+async function loadHistory(){
+  const tbody=document.getElementById('history-tbody');
+  tbody.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-title">Loading history</div><div class="empty-state-sub">Fetching your submission logs…</div></div></td></tr>';
+  loading(true);const s=getSettings();
+  try{
+    // Normal users only see their own logs; admins see all
+    let query = TABLE+'?order=log_date.desc,developer_name.asc&limit=200';
+    if(!isAdmin && currentProfile?.full_name){
+      query = TABLE+'?developer_name=eq.'+encodeURIComponent(currentProfile.full_name)+'&order=log_date.desc&limit=200';
+    }
+    const rows=await sbFetch(query,{headers:{'Prefer':'return=representation'}});
+    if(!rows||rows.length===0){tbody.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">No logs yet</div><div class="empty-state-sub">Submit your first daily log to see your history here.</div></div></td></tr>';return;}
+    tbody.innerHTML=rows.map(r=>{
+      const cost=(r.tokens_used||0)/1000*s.costPer1K;
+      const qf=r.ticket_closed>0?Math.round((1-(r.ticket_reopened||0)/r.ticket_closed)*100):100;
+      return`<tr><td class="mono">${r.log_date}</td><td class="dev-name">${r.developer_name}</td><td>${r.domain?`<span class="dtag ${domainClass(r.domain)}">${r.domain}</span>`:'—'}</td><td class="mono">${r.ticket_closed||0}</td><td class="mono">${((r.tokens_used||0)/1000).toFixed(1)}K</td><td class="mono">$${cost.toFixed(3)}</td><td class="mono">${r.prs_merged||0}</td><td class="mono">${r.ticket_reopened||0}</td><td style="color:${qf>=90?'var(--green)':'var(--amber)'};font-family:'Roboto',sans-serif;font-size:12px">${qf}%</td><td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.notes||''}">${r.notes||'—'}</td></tr>`;
+    }).join('');
+  }catch(e){tbody.innerHTML=`<tr><td colspan="10" class="empty" style="color:var(--red)">// error: ${e.message}</td></tr>`;}
+  finally{loading(false);}
+}
+ 
+function loadSettings(){
+
+  const s = getSettings();
+
+  const costEl = document.getElementById('s-cost');
+
+  const targetEl = document.getElementById('s-target');
+
+  if(costEl){
+    costEl.value = s.costPer1K || '';
+  }
+
+  if(targetEl){
+    targetEl.value = s.targetCPT || '';
+  }
+}
+function saveSettings(){
+
+  const costEl = document.getElementById('s-cost');
+
+  const targetEl = document.getElementById('s-target');
+
+  const cost = costEl
+    ? parseFloat(costEl.value)
+    : null;
+
+  const target = targetEl
+    ? parseFloat(targetEl.value)
+    : null;
+
+  if(cost !== null && !isNaN(cost)){
+    localStorage.setItem('devx_cost', cost);
+  }
+
+  if(target !== null && !isNaN(target)){
+    localStorage.setItem('devx_target', target);
+  }
+
+  const el = document.getElementById('settings-status');
+
+  el.textContent = '✓ saved';
+
+  setTimeout(()=>{
+    el.textContent='';
+  },2500);
+}
+loadSettings();
+// Helpers for parsing and date math
+function parseDateField(r, candidates){
+  for(const k of candidates){
+    if(!k) continue;
+    if(r[k]){
+      const d=new Date(r[k]);
+      if(!isNaN(d)) return d;
+    }
+  }
+  return null;
+}
+function getNumberField(r,candidates){
+  for(const k of candidates){
+    if(r[k]!=null && r[k]!=='') return Number(r[k])||0;
+  }
+  return 0;
+}
+function networkDays(a,b){
+  if(!a||!b) return 0;
+  const start=new Date(a); start.setHours(0,0,0,0);
+  const end=new Date(b); end.setHours(0,0,0,0);
+  if(start> end) return 0;
+  let count=0; const cur=new Date(start);
+  while(cur<=end){
+    const dow=cur.getDay(); if(dow!==0 && dow!==6) count++; cur.setDate(cur.getDate()+1);
+  }
+  return count;
+}
+
+function onCompareTypeChange(){
+  const t=document.getElementById('compare-type').value;
+  // tabs
+  ['epics','bugs','non_epic'].forEach(k=>{
+    const el=document.getElementById('tab-'+(k==='non_epic'?'non':k));
+    if(!el) return;
+    if(k===t) el.classList.add('active'); else el.classList.remove('active');
+  });
+  // update labels and placeholders
+  const leftLabel=document.getElementById('epic1-label');
+  const rightLabel=document.getElementById('epic2-label');
+  const leftField=document.getElementById('epic1-number-field');
+  const rightField=document.getElementById('epic2-number-field');
+  const leftInput=document.getElementById('epic1-number');
+  const rightInput=document.getElementById('epic2-number');
+  const headingA=document.getElementById('epic1-heading');
+  const headingB=document.getElementById('epic2-heading');
+  const resultA=document.getElementById('epic1-title');
+  const resultB=document.getElementById('epic2-title');
+  const leftFeature=document.getElementById('epic1-feature-select');
+  const rightFeature=document.getElementById('epic2-feature-select');
+  if(t==='epics'){
+    leftLabel.textContent='Epic ID'; rightLabel.textContent='Epic ID';
+    leftInput.placeholder='— Select Epic ID —'; rightInput.placeholder='— Select Epic ID —';
+    leftInput.style.display='block'; rightInput.style.display='block';
+    if(leftFeature){leftFeature.style.display='none'; leftFeature.value='';}
+    if(rightFeature){rightFeature.style.display='none'; rightFeature.value='';}
+    leftField.style.display='flex'; rightField.style.display='flex';
+    headingA.textContent='Epic A'; headingB.textContent='Epic B';
+    resultA.textContent='Epic A Results'; resultB.textContent='Epic B Results';
+  }else if(t==='bugs'){
+    leftLabel.textContent='Feature Area'; rightLabel.textContent='Feature Area';
+    leftInput.style.display='none'; rightInput.style.display='none';
+    leftInput.value=''; rightInput.value='';
+    if(leftFeature) leftFeature.style.display='block';
+    if(rightFeature) rightFeature.style.display='block';
+    leftField.style.display='flex'; rightField.style.display='flex';
+    headingA.textContent='Bug A'; headingB.textContent='Bug B';
+    resultA.textContent='Bug A Results'; resultB.textContent='Bug B Results';
+    loadComparisonFeatureAreas();
+  }else{
+    leftField.style.display='none'; rightField.style.display='none';
+    leftInput.value=''; rightInput.value='';
+    leftInput.style.display='block'; rightInput.style.display='block';
+    if(leftFeature){leftFeature.style.display='none'; leftFeature.value='';}
+    if(rightFeature){rightFeature.style.display='none'; rightFeature.value='';}
+    headingA.textContent='Non-Epic A'; headingB.textContent='Non-Epic B';
+    resultA.textContent='Non-Epic A Results'; resultB.textContent='Non-Epic B Results';
+  }
+  // reload developer lists
+  loadEpicDevelopers();
+}
+
+function setCompareType(type){
+  renderComparisonTableHead();
+
+  const hidden=document.getElementById('compare-type');
+  if(hidden) hidden.value=type;
+  onCompareTypeChange();
+
+  if(type === 'bugs') {
+
+    document.getElementById('epic1-label').textContent =
+      'Feature Area';
+
+    document.getElementById('epic2-label').textContent =
+      'Feature Area';
+
+    document.getElementById('epic1-heading').textContent =
+      'Bug Area A';
+
+    document.getElementById('epic2-heading').textContent =
+      'Bug Area B';
+  }
+
+  if(type === 'epics') {
+
+    document.getElementById('epic1-label').textContent =
+      'Epic ID';
+
+    document.getElementById('epic2-label').textContent =
+      'Epic ID';
+
+    document.getElementById('epic1-heading').textContent =
+      'Epic A';
+
+    document.getElementById('epic2-heading').textContent =
+      'Epic B';
+  }
+
+  if(type === 'non_epic') {
+    document.getElementById('epic1-number-field').style.display='none';
+    document.getElementById('epic2-number-field').style.display='none';
+    document.getElementById('epic1-number').value='';
+    document.getElementById('epic2-number').value='';
+    document.getElementById('epic1-heading').textContent='Non-Epic A';
+    document.getElementById('epic2-heading').textContent='Non-Epic B';
+  }
+
+}
+
+function runComparison(){
+  // load both sides
+  loadEpicComparison('left');
+  loadEpicComparison('right');
+}
+
+function syncDeveloperOptionTicks(select){
+  if(!select) return;
+  Array.from(select.options).forEach(opt=>{
+    const original=opt.dataset.original || opt.text.replace(/^✔\s*/, '');
+    opt.dataset.original=original;
+    opt.text = opt.selected ? `✔ ${original}` : original;
+  });
+}
+
+function attachDeveloperTickHandler(id){
+  const select=document.getElementById(id);
+  if(!select || select.dataset.tickAttached === 'true') return;
+  select.dataset.tickAttached = 'true';
+  select.addEventListener('change',()=>syncDeveloperOptionTicks(select));
+  syncDeveloperOptionTicks(select);
+}
+
+async function loadEpicDevelopers(){
+  try{
+    // Fetch from profiles table (already populated by populateDeveloperSelectors on login)
+    // But call again here in case page is refreshed to this view
+    const {data:profiles} = await _sb.from('profiles').select('full_name,role').order('full_name');
+    // Exclude admins — comparison selectors should only list non-admin developers
+    const devNames = (profiles||[]).filter(p=>p.role!=='admin').map(p=>p.full_name).filter(Boolean);
+    ['epic1-devs','epic2-devs'].forEach(id=>{
+      const select=document.getElementById(id);
+      if(!select) return;
+      select.innerHTML=devNames.map(name=>`<option value="${name}">${name}</option>`).join('');
+      attachDeveloperTickHandler(id);
+    });
+  }catch(e){console.error('Error loading developers:',e);}
+}
+
+async function loadEpicComparison(side){
+  const s=getSettings();
+  const type=document.getElementById('compare-type')?.value || 'epics';
+  const idx = side==='left'?1:2;
+  const keyVal=document.getElementById(`epic${idx}-number`).value;
+  const perStart=document.getElementById(`epic${idx}-start`);
+  const perEnd=document.getElementById(`epic${idx}-end`);
+  const startDate=(perStart && perStart.value)?perStart.value:'';
+  const endDate=(perEnd && perEnd.value)?perEnd.value:'';
+  const devSelect=document.getElementById(`epic${idx}-devs`);
+  const selectedDevs=devSelect?Array.from(devSelect.selectedOptions).map(o=>o.value).filter(Boolean):[];
+  const tbodyId=side==='left'?'epic1-tbody':'epic2-tbody';
+  const titleId=side==='left'?'epic1-title':'epic2-title';
+  const chartId=side==='left'?'epic1-sp-chart':'epic2-sp-chart';
+  const isBug = type==='bugs';
+  const isNonEpic = type==='non_epic';
+  const tbody=document.getElementById(tbodyId);
+  const tableHead = tbody.closest('.section').querySelector('thead');
+  const showSla = !isBug;
+  const showPr = !isNonEpic;
+  tableHead.innerHTML = `<tr><th>Developer</th><th>Issues</th><th>Story Points</th>${showSla?'<th>SLA Breaches</th>':''}<th>Avg TAT (days)</th>${showPr?'<th>Avg PR Cycle (days)</th>':''}</tr>`;
+  tbody.innerHTML=`<tr><td colspan="${showPr? (showSla?6:5) : (showSla?5:4)}"><div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-title">Running comparison</div><div class="empty-state-sub">Fetching data from the database…</div></div></td></tr>`;
+  loading(true);
+  try{
+    const tableMap={epics:'epics',bugs:'bugs',non_epic:'non_epic_issues'};
+    const tableName=tableMap[type]||'epics';
+    let query=tableName+'?';
+    const filters=[];
+    if(type==='epics' && keyVal) {
+      filters.push(encodeURIComponent('EPIC ID')+'=eq.'+encodeURIComponent(keyVal));
+    }
+
+    // IMPORTANT:
+    // Bugs + Non Epic are filtered on frontend
+    // because column names contain spaces and
+    // PostgREST OR filters were causing no-data issues.
+    if(startDate){
+      const dateField= type==='epics' ? encodeURIComponent('Recieved Date by Customer') : encodeURIComponent('Received date');
+      filters.push(dateField+'=gte.'+startDate);
+    }
+    if(endDate){
+      const dateField= type==='epics' ? encodeURIComponent('Recieved Date by Customer') : encodeURIComponent('Received date');
+      filters.push(dateField+'=lte.'+endDate);
+    }
+    if(filters.length) query+=filters.join('&');
+    query += (filters.length? '&':'') + 'order='+ (type==='epics' ? encodeURIComponent('Recieved Date by Customer') : encodeURIComponent('Received date')) + '.asc';
+    const rows=await sbFetch(query,{headers:{'Prefer':'return=representation'}});
+    let filtered=rows||[];
+
+    // Get registered user names from profiles dropdown
+    const devDropdown=document.getElementById('weekly-developer');
+    const registeredNames=devDropdown ? new Set(Array.from(devDropdown.options).map(o=>o.value).filter(Boolean)) : new Set();
+
+    // frontend filtering for Bugs + Non Epic
+    if(type==='bugs' && keyVal){
+      filtered = filtered.filter(r => {
+        const area = (
+          r['Feature Area'] ||
+          r['feature area'] ||
+          ''
+        ).toString().trim().toLowerCase();
+
+        return area === keyVal.toString().trim().toLowerCase();
+      });
+    }
+
+    if(selectedDevs.length>0) filtered = filtered.filter(r=>{
+      const developer = type==='bugs'
+        ? (r['Bug Owner'] || r['bug owner'] || r['Issue Owner'] || r['Issue owner'] || r['Assign to QA'] || r['Assign to Qa'] || r['Assign to qa'])
+        : (r.Assignee || r['Assignee'] || r['assignee'] || r.developer_name);
+      return developer && selectedDevs.includes(developer);
+    });
+    // When no specific devs selected, filter results to only registered users
+    if(selectedDevs.length===0 && registeredNames.size>0){
+      filtered = filtered.filter(r=>{
+        const developer = type==='bugs'
+          ? (r['Bug Owner'] || r['bug owner'] || r['Issue Owner'] || r['Issue owner'] || r['Assign to QA'] || r['Assign to Qa'] || r['Assign to qa'])
+          : (r.Assignee || r['Assignee'] || r['assignee'] || r.developer_name);
+        return developer && registeredNames.has(developer);
+      });
+    }
+    if(filtered.length===0){
+      tbody.innerHTML=`<tr><td colspan="${showPr? (showSla?6:5) : (showSla?5:4)}"><div class="empty-state"><div class="empty-state-icon">📊</div><div class="empty-state-title">No data found</div><div class="empty-state-sub">No records matched your selected filters. Try adjusting the date range or developer selection.</div></div></td></tr>`;
+      document.getElementById(titleId).textContent='No results';
+      updateComparisonChart(side,[],[]);
+      return;
+    }
+
+    // aggregate per developer
+    const devSummary={};
+    filtered.forEach(r=>{
+      const name = type==='bugs'
+        ? (r['Bug Owner'] || r['bug owner'] || r['Issue Owner'] || r['Issue owner'] || r['Assign to QA'] || r['Assign to Qa'] || r['Assign to qa'] || 'Unknown')
+        : (r.Assignee || r['Assignee'] || r['assignee'] || r.developer_name || 'Unknown');
+      if(!devSummary[name]) devSummary[name]={developer_name:name,issues:0,story_points:0,sla_breaches:0,tat_sum:0,tat_count:0,pr_sum:0,pr_count:0};
+      const rec = devSummary[name];
+      rec.issues += 1;
+      const actualStart = parseDateField(r,['Actual Start','actual_start','Actual_Start','Actual Start']);
+      let actualEnd = parseDateField(r,['Actual End','actual_end','Actual_End','Actual End']);
+      const plannedStart = type==='non_epic'
+        ? parseDateField(r,['Start date','start_date','Start Date'])
+        : parseDateField(r,['Planned Start date','planned_start','planned_start_date','Planned Start date']);
+      const plannedEnd = type==='non_epic'
+        ? parseDateField(r,['End date','end_date','End Date'])
+        : parseDateField(r,['Planned End date','planned_end','planned_end_date','Planned End date']);
+      // For non_epic, use the real Story Points field
+      if(type==='non_epic'){
+        const sp = Number(r['Story Points'] || r['story_points'] || r['story points'] || 0);
+        rec.story_points += sp;
+      }
+      if(actualStart){
+        if(!actualEnd) actualEnd = new Date();
+        const tat = networkDays(actualStart,actualEnd);
+        rec.tat_sum += tat;
+        rec.tat_count += 1;
+        if(type!=='non_epic') rec.story_points += tat;
+      } else if(type==='bugs' && r['TAT'] != null && r['TAT'] !== '') {
+        // Bugs have a pre-computed TAT field — use it as fallback
+        const tat = Number(r['TAT']) || 0;
+        rec.tat_sum += tat;
+        rec.tat_count += 1;
+        rec.story_points += tat;
+      }
+      if(actualStart && plannedStart && plannedEnd){
+        const actualDur = networkDays(actualStart,actualEnd || new Date());
+        const plannedDur = networkDays(plannedStart,plannedEnd);
+        if(actualDur > plannedDur) rec.sla_breaches++;
+      }
+      const prRaised = parseDateField(r,['PR Raised Date','pr_raised_date','PR Raised Date','pr_raised']);
+      if(type==='non_epic'){
+        if(prRaised && actualStart){ const prc = networkDays(actualStart,prRaised); rec.pr_sum += prc; rec.pr_count++; }
+      } else {
+        const prMerged = parseDateField(r,['PR Merge Date','PR Merged Date','pr_merged_date','pr_merged']);
+        if(prRaised && prMerged){ const prc = networkDays(prRaised,prMerged); rec.pr_sum += prc; rec.pr_count++; }
+      }
+    });
+
+    const sorted = Object.values(devSummary).sort((a,b)=>a.developer_name.localeCompare(b.developer_name));
+    tbody.innerHTML = sorted.map(r=>{
+      const avgTat = r.tat_count? (r.tat_sum / r.tat_count).toFixed(1) : '—';
+      const avgPr = r.pr_count? (r.pr_sum / r.pr_count).toFixed(1) : '—';
+      const rowCells = [`<td class="dev-name">${r.developer_name}</td>`,`<td class="mono">${r.issues}</td>`,`<td class="mono">${r.story_points||0}</td>`];
+      if(showSla) rowCells.push(`<td class="mono">${r.sla_breaches}</td>`);
+      rowCells.push(`<td class="mono">${avgTat}</td>`);
+      if(showPr) rowCells.push(`<td class="mono">${avgPr}</td>`);
+      return `<tr>${rowCells.join('')}</tr>`;
+    }).join('');
+
+    document.getElementById(titleId).textContent = `${type==='epics'?'Epic':type==='bugs'?'Bug':'Non-Epic Issue'} Results (${sorted.length} devs)`;
+    updateComparisonChart(side, sorted.map(r=>r.developer_name), sorted.map(r=>r.story_points || 0));
+  }catch(e){tbody.innerHTML=`<tr><td colspan="${showPr? (showSla?6:5) : (showSla?5:4)}"><div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-title">Failed to load comparison data</div><div class="empty-state-sub">${e.message}</div></div></td></tr>`;}
+  finally{loading(false);}
+}
+
+function updateComparisonChart(side, labels, values){
+  const chartId = side==='left' ? 'epic1-sp-chart' : 'epic2-sp-chart';
+  const current = side==='left' ? compareChartLeft : compareChartRight;
+  if(current) current.destroy();
+  const ctx = document.getElementById(chartId);
+  if(!ctx) return;
+  const config = {
+    type:'bar',
+    data:{labels,datasets:[{label:'Story Points',data:values,backgroundColor:side==='left'?'rgba(64,166,139,0.7)':'rgba(123,97,255,0.7)',borderRadius:8}]},
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:chartAxisColor()}},y:{ticks:{color:chartAxisColor(),beginAtZero:true}}
+    }}
+  };
+  const chart = new Chart(ctx,config);
+  if(side==='left') compareChartLeft=chart; else compareChartRight=chart;
+}
+
+/* ======================================================================
+   ADD ISSUE DATA — form configs + Supabase append + Excel (SharePoint) sync
+   ====================================================================== */
+
+const ISSUE_DEV_LIST=[];
+const ISSUE_STATUS_LIST=['Backlog','Analysis in progress','Development in progress','PR raised','Merged in DEV-1','Ready for Test','Testing in progress','Blocked','Reopened','On Hold','Done'];
+const ISSUE_DOMAIN_LIST=['Frontend','Backend','Full Stack','Python','Java','DevOps','QA'];
+const ISSUE_PRIORITY_LIST=['Low','Medium','High','Critical'];
+const ISSUE_YESNO_LIST=['No','Yes'];
+
+// Field order below should match the column order of the corresponding
+// table in the SharePoint Excel workbook (see EXCEL_CONFIG.tables).
+const ISSUE_FORM_CONFIGS={
+  epics:{
+    table:'epics',
+    label:'Epic',
+    excelTable:'EpicsTable',
+    fields:[
+      {k:'EPIC ID',t:'text'},
+      {k:'EPIC Owner',t:'select',o:ISSUE_DEV_LIST},
+      {k:'Issue ID',t:'text'},
+      {k:'Title',t:'text'},
+      {k:'Assignee',t:'select',o:ISSUE_DEV_LIST},
+      {k:'Recieved Date by Customer',t:'date'},
+      {k:'PBR Dates',t:'date'},
+      {k:'Estimate shared Date',t:'date'},
+      {k:'Estimate Agreed date (Zilo)',t:'date'},
+      {k:'Approved Estimates (in Days)',t:'number'},
+      {k:'Planned Start date',t:'date'},
+      {k:'Planned End date',t:'date'},
+      {k:'Actual Start',t:'date'},
+      {k:'Actual End',t:'date'},
+      {k:'No. of days blocked',t:'number'},
+      {k:'Blocked Reason (with dates)',t:'textarea'},
+      {k:'Status',t:'select',o:ISSUE_STATUS_LIST},
+      {k:'Development Start Date',t:'date'},
+      {k:'PR Raised Date',t:'date'},
+      {k:'PR Raised Time',t:'time'},
+      {k:'PR Merged Date',t:'date'},
+      {k:'PR Merged Time',t:'time'},
+      {k:'Demo Recording Share Date',t:'date'},
+      {k:'Dev Shared Date',t:'date'},
+      {k:'Date Code Moved to UAT',t:'date'},
+      {k:'Remarks',t:'textarea'},
+      {k:'isReport',t:'select',o:ISSUE_YESNO_LIST}
+    ]
+  },
+  bugs:{
+    table:'bugs',
+    label:'Bug',
+    excelTable:'BugsTable',
+    fields:[
+      {k:'Bug ID',t:'text'},
+      {k:'Bug Owner',t:'select',o:ISSUE_DEV_LIST},
+      {k:'Priority',t:'select',o:ISSUE_PRIORITY_LIST},
+      {k:'Status',t:'select',o:ISSUE_STATUS_LIST},
+      {k:'Feature Area',t:'feature-area'},
+      {k:'Epic ID',t:'text'},
+      {k:'Epic owner',t:'select',o:ISSUE_DEV_LIST},
+      {k:'Domain',t:'select',o:ISSUE_DOMAIN_LIST},
+      {k:'Issue ID',t:'text'},
+      {k:'Issue Owner',t:'select',o:ISSUE_DEV_LIST},
+      {k:'Issue type',t:'text'},
+      {k:'Re-open',t:'number'},
+      {k:'Remarks (if reopen)',t:'textarea'},
+      {k:'Received date',t:'date'},
+      {k:'Actual Start',t:'date'},
+      {k:'Actual End',t:'date'},
+      {k:'Development Start Date',t:'date'},
+      {k:'PR Raised Date',t:'date'},
+      {k:'PR Merge Date',t:'date'},
+      {k:'Dev Shared Date',t:'date'},
+      {k:'Deployed in UAT Date',t:'date'},
+      {k:'Assign to QA',t:'date'},
+      {k:'Sign Off from QA',t:'date'},
+      {k:'TAT',t:'number'},
+      {k:'Detailed explanation',t:'textarea'},
+      {k:'Why 1',t:'textarea'},
+      {k:'Why 2',t:'textarea'},
+      {k:'Why 3',t:'textarea'},
+      {k:'Why 4',t:'textarea'},
+      {k:'Why 5',t:'textarea'},
+      {k:'Issue',t:'textarea'},
+      {k:'Issue Details / Description',t:'textarea'},
+      {k:'Cause',t:'textarea'},
+      {k:'Fix',t:'textarea'},
+      {k:'Future Precaution',t:'textarea'},
+      {k:'Remarks',t:'textarea'},
+      {k:'Correction Steps',t:'textarea'},
+      {k:'Preventive steps',t:'textarea'},
+      {k:'Sign off taken from?',t:'select',o:ISSUE_DEV_LIST},
+      {k:'Settlement',t:'text'}
+    ]
+  },
+  non_epic:{
+    table:'non_epic_issues',
+    label:'Non-Epic Issue',
+    excelTable:'NonEpicIssuesTable',
+    fields:[
+      {k:'EPIC ID',t:'text'},
+      {k:'Issue ID',t:'text'},
+      {k:'Title',t:'text'},
+      {k:'Assignee',t:'select',o:ISSUE_DEV_LIST},
+      {k:'Story Points',t:'number'},
+      {k:'Received date',t:'date'},
+      {k:'Start date',t:'date'},
+      {k:'End date',t:'date'},
+      {k:'Actual Start',t:'date'},
+      {k:'Actual End',t:'date'},
+      {k:'PR Raised Date',t:'date'},
+      {k:'Status',t:'select',o:ISSUE_STATUS_LIST},
+      {k:'Remarks',t:'textarea'},
+      {k:'isUIChanges',t:'select',o:ISSUE_YESNO_LIST}
+    ]
+  }
+};
+
+function issueFieldId(key){
+  return 'if_'+key.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+}
+
+function renderIssueForm(){
+  const typeSelect=document.getElementById('issue-type-select');
+  const container=document.getElementById('issue-form-fields');
+  const hint=document.getElementById('issue-form-hint');
+  const statusEl=document.getElementById('issue-form-status');
+  if(!typeSelect || !container) return;
+  if(statusEl){statusEl.className='status-msg';statusEl.textContent='';}
+  const type=typeSelect.value;
+  if(!type){
+    container.innerHTML='';
+    if(hint) hint.style.display='block';
+    return;
+  }
+  if(hint) hint.style.display='none';
+  const config=ISSUE_FORM_CONFIGS[type];
+  container.innerHTML=config.fields.map(f=>{
+    const id=issueFieldId(f.k);
+    let input;
+    if(f.t==='select'){
+      input=`<select id="${id}"><option value="">— Select —</option>${f.o.map(o=>`<option value="${o}">${o}</option>`).join('')}</select>`;
+    }else if(f.t==='feature-area'){
+      input=`<select id="${id}" onchange="toggleFeatureAreaCustom('${id}')"><option value="">— Select —</option><option value="__other__">+ Add new feature area…</option></select>
+        <input type="text" id="${id}_other" placeholder="New feature area name" style="display:none;margin-top:8px;">`;
+    }else if(f.t==='textarea'){
+      input=`<textarea id="${id}" rows="3"></textarea>`;
+    }else{
+      input=`<input type="${f.t}" id="${id}">`;
+    }
+    const cls=f.t==='textarea' ? 'field full-width' : 'field';
+    return `<div class="${cls}"><label>${f.k}</label>${input}</div>`;
+  }).join('');
+
+  if(type==='bugs') loadFeatureAreaOptions(issueFieldId('Feature Area'));
+}
+
+function toggleFeatureAreaCustom(selectId){
+  const select=document.getElementById(selectId);
+  const other=document.getElementById(selectId+'_other');
+  if(!select || !other) return;
+  if(select.value==='__other__'){
+    other.style.display='block';
+    other.focus();
+  }else{
+    other.style.display='none';
+    other.value='';
+  }
+}
+
+async function loadFeatureAreaOptions(selectId){
+  const select=document.getElementById(selectId);
+  if(!select) return;
+  try{
+    const col=encodeURIComponent('Feature Area');
+    const rows=await sbFetch(`bugs?select=${col}&${col}=not.is.null&order=${col}`,{method:'GET'});
+    const unique=[...new Set((rows||[]).map(r=>r['Feature Area']).filter(v=>v!==null && String(v).trim()!==''))].sort((a,b)=>a.localeCompare(b));
+    const otherOpt=select.querySelector('option[value="__other__"]');
+    unique.forEach(val=>{
+      const opt=document.createElement('option');
+      opt.value=val;
+      opt.textContent=val;
+      select.insertBefore(opt,otherOpt);
+    });
+  }catch(e){
+    console.error('Failed to load feature areas:',e);
+  }
+}
+
+async function loadComparisonFeatureAreas(){
+  try{
+    const col=encodeURIComponent('Feature Area');
+    const rows=await sbFetch(`bugs?select=${col}&${col}=not.is.null&order=${col}`,{method:'GET'});
+    const unique=[...new Set((rows||[]).map(r=>r['Feature Area']).filter(v=>v!==null && String(v).trim()!==''))].sort((a,b)=>a.localeCompare(b));
+    const optionsHtml='<option value="">— All Feature Areas —</option>'+unique.map(v=>`<option value="${v}">${v}</option>`).join('');
+    ['epic1-feature-select','epic2-feature-select'].forEach(id=>{
+      const sel=document.getElementById(id);
+      if(!sel) return;
+      const current=sel.value;
+      sel.innerHTML=optionsHtml;
+      if(unique.includes(current)) sel.value=current;
+    });
+  }catch(e){
+    console.error('Failed to load feature areas for comparison:',e);
+  }
+}
+
+function clearIssueForm(){
+  const typeSelect=document.getElementById('issue-type-select');
+  const type=typeSelect ? typeSelect.value : '';
+  if(!type) return;
+  const config=ISSUE_FORM_CONFIGS[type];
+  config.fields.forEach(f=>{
+    const el=document.getElementById(issueFieldId(f.k));
+    if(el) el.value='';
+    if(f.t==='feature-area'){
+      const other=document.getElementById(issueFieldId(f.k)+'_other');
+      if(other){other.value='';other.style.display='none';}
+    }
+  });
+}
+
+async function submitIssueForm(){
+  const typeSelect=document.getElementById('issue-type-select');
+  const statusEl=document.getElementById('issue-form-status');
+  const btn=document.getElementById('issue-submit-btn');
+  const type=typeSelect ? typeSelect.value : '';
+
+  if(!type){
+    statusEl.className='status-msg err';
+    statusEl.textContent='Select an issue category first';
+    return;
+  }
+
+  const config=ISSUE_FORM_CONFIGS[type];
+  const record={};
+  config.fields.forEach(f=>{
+    const el=document.getElementById(issueFieldId(f.k));
+    let val=el ? el.value : '';
+    if(f.t==='feature-area' && val==='__other__'){
+      const other=document.getElementById(issueFieldId(f.k)+'_other');
+      val=other ? other.value : '';
+    }
+    if(val==='') val=null;
+    if(val!==null && f.t==='number') val=Number(val);
+    record[f.k]=val;
+  });
+
+  btn.disabled=true;
+  statusEl.className='status-msg loading';
+  statusEl.textContent='Saving to database…';
+  loading(true);
+
+  try{
+    // 1) append the row to the matching Supabase table
+    await sbFetch(config.table,{method:'POST',prefer:'return=minimal',body:JSON.stringify([record])});
+
+    // 2) append the same row to the SharePoint Excel sheet
+    statusEl.textContent='Saving to database… updating Excel sheet…';
+    try{
+      await appendExcelRow(type,config,record);
+      statusEl.className='status-msg ok';
+      statusEl.textContent=`✓ Saved ${config.label} to database and Excel`;
+    }catch(excelErr){
+      // Row is already saved in Supabase — surface the Excel error separately
+      statusEl.className='status-msg err';
+      statusEl.textContent=`✓ Saved to database, but Excel update failed: ${excelErr.message}`;
+    }
+
+    clearIssueForm();
+  }catch(e){
+    statusEl.className='status-msg err';
+    statusEl.textContent='Error: '+e.message;
+  }finally{
+    btn.disabled=false;
+    loading(false);
+  }
+}
+
+/* ----------------------------------------------------------------------
+   Microsoft Graph / SharePoint Excel integration
+   ------------------------------------------------------------------------
+   To make the "Connect Microsoft Account" button and Excel sync work,
+   an Azure AD App Registration is required (one-time setup by your IT/
+   Azure admin):
+
+   1. Go to portal.azure.com → Azure Active Directory → App registrations
+      → New registration.
+        - Redirect URI (type "Single-page application / SPA"): the exact
+          URL where this page is hosted (e.g. https://yourcompany.sharepoint.com/...).
+   2. Under "API permissions", add Microsoft Graph DELEGATED permissions:
+        - Files.ReadWrite  (or Files.ReadWrite.All)
+        - Sites.ReadWrite.All
+      and grant admin consent if required by your tenant.
+   3. Copy the "Application (client) ID" and "Directory (tenant) ID" from
+      the app's Overview page into MS_GRAPH_CONFIG below.
+   4. Find your SharePoint site ID:
+        GET https://graph.microsoft.com/v1.0/sites/{hostname}:/{site-path}
+      e.g. https://graph.microsoft.com/v1.0/sites/yourtenant.sharepoint.com:/sites/YourSite
+   5. Find the Excel file's item ID:
+        GET https://graph.microsoft.com/v1.0/sites/{site-id}/drive/root:/path/to/file.xlsx
+   6. In the Excel workbook, make sure each sheet's data is formatted as an
+      Excel Table (select the data → Insert → Table) and name those tables
+      to match EXCEL_CONFIG below (EpicsTable / BugsTable / NonEpicIssuesTable),
+      with columns in the SAME ORDER as the "fields" arrays in
+      ISSUE_FORM_CONFIGS above.
+
+   Fill in the placeholders below once the above is done.
+---------------------------------------------------------------------- */
+
+const MS_GRAPH_CONFIG={
+  clientId:'YOUR_AZURE_APP_CLIENT_ID',     // <-- Application (client) ID
+  tenantId:'YOUR_AZURE_TENANT_ID',         // <-- Directory (tenant) ID
+  siteId:'YOUR_SHAREPOINT_SITE_ID',        // <-- SharePoint site ID
+  itemId:'YOUR_EXCEL_FILE_ITEM_ID'         // <-- Excel file's drive item ID
+};
+const GRAPH_SCOPES=['Files.ReadWrite','Sites.ReadWrite.All'];
+
+let msalApp=null;
+let msalAccount=null;
+
+function getMsalApp(){
+  if(!msalApp){
+    if(typeof msal==='undefined'){
+      throw new Error('msal-browser failed to load');
+    }
+    msalApp=new msal.PublicClientApplication({
+      auth:{
+        clientId:MS_GRAPH_CONFIG.clientId,
+        authority:'https://login.microsoftonline.com/'+MS_GRAPH_CONFIG.tenantId,
+        redirectUri:window.location.origin+window.location.pathname
+      },
+      cache:{cacheLocation:'sessionStorage'}
+    });
+    const existing=msalApp.getAllAccounts();
+    if(existing.length>0) msalAccount=existing[0];
+  }
+  return msalApp;
+}
+
+async function connectMicrosoft(){
+  const statusEl=document.getElementById('ms-connect-status');
+  try{
+    if(MS_GRAPH_CONFIG.clientId==='YOUR_AZURE_APP_CLIENT_ID'){
+      statusEl.className='status-msg err';
+      statusEl.textContent='Microsoft connection not configured yet — set MS_GRAPH_CONFIG in the script';
+      return;
+    }
+    const app=getMsalApp();
+    const result=await app.loginPopup({scopes:GRAPH_SCOPES});
+    msalAccount=result.account;
+    statusEl.className='status-msg ok';
+    statusEl.textContent='✓ Connected as '+msalAccount.username;
+  }catch(e){
+    statusEl.className='status-msg err';
+    statusEl.textContent='Connection failed: '+e.message;
+  }
+}
+
+async function getGraphToken(){
+  const app=getMsalApp();
+  if(!msalAccount){
+    const accounts=app.getAllAccounts();
+    if(accounts.length>0) msalAccount=accounts[0];
+    else throw new Error('Click "Connect Microsoft Account" first');
+  }
+  try{
+    const result=await app.acquireTokenSilent({scopes:GRAPH_SCOPES,account:msalAccount});
+    return result.accessToken;
+  }catch(e){
+    const result=await app.acquireTokenPopup({scopes:GRAPH_SCOPES});
+    msalAccount=result.account;
+    return result.accessToken;
+  }
+}
+
+async function appendExcelRow(type,config,record){
+  if(MS_GRAPH_CONFIG.clientId==='YOUR_AZURE_APP_CLIENT_ID'
+    || MS_GRAPH_CONFIG.siteId==='YOUR_SHAREPOINT_SITE_ID'
+    || MS_GRAPH_CONFIG.itemId==='YOUR_EXCEL_FILE_ITEM_ID'){
+    throw new Error('Excel sync not configured — set MS_GRAPH_CONFIG in the script');
+  }
+
+  const token=await getGraphToken();
+
+  // Build the row values array in the same order as config.fields
+  const rowValues=config.fields.map(f=>{
+    const v=record[f.k];
+    return (v===null || v===undefined) ? '' : v;
+  });
+
+  const url=`https://graph.microsoft.com/v1.0/sites/${MS_GRAPH_CONFIG.siteId}/drive/items/${MS_GRAPH_CONFIG.itemId}/workbook/tables/${config.excelTable}/rows/add`;
+
+  const res=await fetch(url,{
+    method:'POST',
+    headers:{
+      'Authorization':'Bearer '+token,
+      'Content-Type':'application/json'
+    },
+    body:JSON.stringify({values:[rowValues]})
+  });
+
+  if(!res.ok){
+    const err=await res.json().catch(()=>({}));
+    throw new Error((err.error && err.error.message) || ('Excel update failed: '+res.status));
+  }
+}
+
+
+
+loadSettings();
+loadEpicDevelopers();
+onCompareTypeChange();
+const now=new Date();const monday=new Date(now);monday.setDate(now.getDate()-(now.getDay()===0?6:now.getDay()-1));monday.setHours(0,0,0,0);const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);['epic1-start','epic2-start'].forEach(id=>document.getElementById(id).value=monday.toISOString().split('T')[0]);['epic1-end','epic2-end'].forEach(id=>document.getElementById(id).value=sunday.toISOString().split('T')[0]);
+addRecord();
+
+</script>
+</body>
+</html>
