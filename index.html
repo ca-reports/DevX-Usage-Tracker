@@ -2594,7 +2594,10 @@ async function loadHistory(){
       const qf=r.ticket_closed>0?Math.round((1-(r.ticket_reopened||0)/r.ticket_closed)*100):100;
       return`<tr><td class="mono">${r.log_date}</td><td class="dev-name">${r.developer_name}</td><td>${r.domain?`<span class="dtag ${domainClass(r.domain)}">${r.domain}</span>`:'—'}</td><td class="mono">${r.ticket_closed||0}</td><td class="mono">${((r.tokens_used||0)/1000).toFixed(1)}K</td><td class="mono">$${cost.toFixed(3)}</td><td class="mono">${r.prs_merged||0}</td><td class="mono">${r.ticket_reopened||0}</td><td style="color:${qf>=90?'var(--green)':'var(--amber)'};font-family:'Roboto',sans-serif;font-size:12px">${qf}%</td><td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.notes||''}">${r.notes||'—'}</td></tr>`;
     }).join('');
-  }catch(e){tbody.innerHTML=`<tr><td colspan="10" class="empty" style="color:var(--red)">// error: ${e.message}</td></tr>`;}
+  }catch(e){
+    console.error('loadHistory error:',e);
+    tbody.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">No logs yet</div><div class="empty-state-sub">Submit your first daily log to see your history here.</div></div></td></tr>';
+  }
   finally{loading(false);}
 }
  
