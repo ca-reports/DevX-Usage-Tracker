@@ -38,6 +38,7 @@ body{font-family:'Roboto',sans-serif;background:var(--bg);color:var(--text);font
 .sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:hidden;}
 .sidebar::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--cyan),var(--purple),var(--green));background-size:200% 100%;animation:shimmer 3s linear infinite;}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes toast-drain{0%{width:100%}100%{width:0%}}
 .sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid var(--border);}
 .logo-badge{display:inline-flex;align-items:center;gap:8px;background:var(--cyan-dim);border:1px solid var(--border-bright);border-radius:8px;padding:6px 10px;margin-bottom:12px;}
 .logo-dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:pulse 2s ease-in-out infinite;}
@@ -191,6 +192,27 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1) brightnes
 .status-msg.ok{color:var(--green);}
 .status-msg.err{color:var(--red);}
 .status-msg.loading{color:var(--text-faint);}
+
+/* Toast notification */
+#save-toast{
+  position:fixed;bottom:32px;right:32px;z-index:9999;
+  display:flex;align-items:center;gap:12px;
+  background:var(--surface);border:1px solid var(--cyan);
+  border-radius:12px;padding:14px 20px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.35),0 0 0 1px var(--border-bright);
+  font-family:'Roboto',sans-serif;font-size:13px;font-weight:600;color:var(--cyan);
+  pointer-events:none;
+  transform:translateY(16px) scale(0.97);opacity:0;
+  transition:opacity .25s ease,transform .25s ease;
+}
+#save-toast.show{transform:translateY(0) scale(1);opacity:1;}
+#save-toast .toast-icon{font-size:18px;line-height:1;}
+#save-toast .toast-bar{
+  position:absolute;bottom:0;left:0;height:3px;border-radius:0 0 12px 12px;
+  background:var(--cyan);width:100%;transform-origin:left;
+  animation:none;
+}
+#save-toast.show .toast-bar{animation:toast-drain 3s linear forwards;}
  
 /* Table */
 .data-table{width:100%;border-collapse:collapse;background:var(--surface);border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);}
@@ -1707,8 +1729,17 @@ body:JSON.stringify(payload)
 );
  
 statusEl.className='status-msg ok';
-statusEl.textContent='✓ Saved '+payload.length+' records';
+statusEl.textContent='✓ Saved '+payload.length+' record'+(payload.length!==1?'s':'');
+showSaveToast('Saved '+payload.length+' record'+(payload.length!==1?'s':''));
 clearLogDraft();
+
+// Reset the form — wipe all record cards and add one blank one
+const container=document.getElementById('records-container');
+if(container) container.innerHTML='';
+addRecord();
+
+// Clear the status text after a short delay so it doesn't linger
+setTimeout(()=>{statusEl.textContent='';statusEl.className='status-msg';},3200);
  
 }
 catch(e){
@@ -3540,10 +3571,34 @@ async function appendExcelRow(type,config,record){
 
 
 
+// ── Toast helper ──────────────────────────────────────────────────
+(function(){
+  const toast=document.createElement('div');
+  toast.id='save-toast';
+  toast.innerHTML='<span class="toast-icon">✅</span><span id="save-toast-msg"></span><span class="toast-bar"></span>';
+  document.body.appendChild(toast);
+})();
+
+let _toastTimer=null;
+function showSaveToast(msg){
+  const toast=document.getElementById('save-toast');
+  const msgEl=document.getElementById('save-toast-msg');
+  if(!toast||!msgEl) return;
+  // reset animation
+  const bar=toast.querySelector('.toast-bar');
+  if(bar){ bar.style.animation='none'; void bar.offsetWidth; bar.style.animation=''; }
+  msgEl.textContent=msg;
+  toast.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>toast.classList.remove('show'),3200);
+}
+
 loadSettings();
 loadEpicDevelopers();
 onCompareTypeChange();
-const now=new Date();const monday=new Date(now);monday.setDate(now.getDate()-(now.getDay()===0?6:now.getDay()-1));monday.setHours(0,0,0,0);const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);['epic1-start','epic2-start'].forEach(id=>document.getElementById(id).value=monday.toISOString().split('T')[0]);['epic1-end','epic2-end'].forEach(id=>document.getElementById(id).value=sunday.toISOString().split('T')[0]);
+const now=new Date();
+document.getElementById('f-date').value=now.toISOString().split('T')[0];
+const monday=new Date(now);monday.setDate(now.getDate()-(now.getDay()===0?6:now.getDay()-1));monday.setHours(0,0,0,0);const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);['epic1-start','epic2-start'].forEach(id=>document.getElementById(id).value=monday.toISOString().split('T')[0]);['epic1-end','epic2-end'].forEach(id=>document.getElementById(id).value=sunday.toISOString().split('T')[0]);
 if(!document.querySelector('.record-card')){
   addRecord();
 }
