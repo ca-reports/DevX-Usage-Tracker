@@ -1494,13 +1494,18 @@ Record
 <label>Notes <span class="req-star r-notes-star" style="display:none">*</span> <span class="r-notes-hint" style="font-weight:400;color:var(--text-faint);font-size:11px">(required when status is Reopened or Blocked)</span></label>
 <textarea class="r-notes"></textarea>
 </div>
- 
+
+<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;">
 <button
 class="btn secondary"
-onclick="this.parentElement.remove(); renumberRecords(); saveLogDraft();"
+style="border-color:var(--red-dim);color:var(--red);gap:6px;"
+onmouseover="this.style.background='var(--red-dim)';this.style.color='var(--red)';"
+onmouseout="this.style.background='';this.style.color='var(--red)';"
+onclick="this.closest('.record-card').remove(); renumberRecords(); saveLogDraft();"
 >
-🗑 Remove
+🗑 Remove Record
 </button>
+</div>
  
 </div>
 `;
