@@ -421,6 +421,12 @@ select[multiple] option{padding-left:10px;}
 .auth-msg{font-size:12px;font-weight:600;margin-top:12px;min-height:18px;text-align:center;}
 .auth-msg.ok{color:var(--green);}
 .auth-msg.err{color:var(--red);}
+.auth-forgot{font-size:11px;color:var(--cyan);cursor:pointer;text-align:right;margin-top:-6px;margin-bottom:10px;display:inline-block;width:100%;text-decoration:underline;text-underline-offset:2px;opacity:0.85;transition:opacity .2s;}
+.auth-forgot:hover{opacity:1;}
+.auth-divider{height:1px;background:var(--border);margin:18px 0 16px;}
+.auth-back{font-size:11px;color:var(--text-faint);cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-bottom:16px;transition:color .2s;}
+.auth-back:hover{color:var(--cyan);}
+.auth-back svg{width:13px;height:13px;}
 
 /* ── User badge in sidebar footer ─────────────────────────────── */
 .user-badge{display:flex;align-items:center;gap:6px;padding:8px 0 4px;min-width:0;}
@@ -451,7 +457,7 @@ select[multiple] option{padding-left:10px;}
       <h1>DevX <span>Usage</span> Tracker</h1>
       <p>Tokens in. <em>Insight out.</em></p>
     </div>
-    <div class="auth-tabs">
+    <div class="auth-tabs" id="auth-tabs">
       <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Sign In</div>
       <div class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</div>
     </div>
@@ -467,6 +473,7 @@ select[multiple] option{padding-left:10px;}
           </button>
         </div>
       </div>
+      <span class="auth-forgot" onclick="showForgotPassword()">Forgot password?</span>
       <button class="auth-btn" id="login-btn" type="submit">Sign In</button>
       <div class="auth-msg" id="login-msg"></div>
     </form>
@@ -486,6 +493,47 @@ select[multiple] option{padding-left:10px;}
       <button class="auth-btn" id="signup-btn" type="submit">Create Account</button>
       <div class="auth-msg" id="signup-msg"></div>
     </form>
+    <!-- FORGOT PASSWORD PANEL -->
+    <div id="auth-forgot-panel" style="display:none;">
+      <span class="auth-back" onclick="hideForgotPassword()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Back to Sign In
+      </span>
+      <div style="margin-bottom:16px;">
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;">Reset your password</div>
+        <div style="font-size:12px;color:var(--text-faint);">Enter your email and we'll send you a link to create a new password.</div>
+      </div>
+      <div class="auth-field"><label>Email</label><input type="email" id="reset-email" placeholder="you@company.com" autocomplete="email"></div>
+      <button class="auth-btn" id="reset-send-btn" onclick="doSendPasswordReset()">Send Reset Link</button>
+      <div class="auth-msg" id="reset-msg"></div>
+    </div>
+    <!-- SET NEW PASSWORD PANEL (shown after clicking email link) -->
+    <div id="auth-newpw-panel" style="display:none;">
+      <div style="margin-bottom:16px;">
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;">Set a new password</div>
+        <div style="font-size:12px;color:var(--text-faint);">Choose a strong password for your account.</div>
+      </div>
+      <div class="auth-field"><label>New Password</label>
+        <div class="auth-password-wrap">
+          <input type="password" id="newpw-password" placeholder="Min 6 characters" autocomplete="new-password">
+          <button type="button" class="auth-password-toggle" id="newpw-password-toggle" onclick="togglePasswordVisibility('newpw-password')" aria-label="Show password">
+            <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 5c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="auth-field"><label>Confirm New Password</label>
+        <div class="auth-password-wrap">
+          <input type="password" id="newpw-confirm" placeholder="Repeat new password" autocomplete="new-password">
+          <button type="button" class="auth-password-toggle" id="newpw-confirm-toggle" onclick="togglePasswordVisibility('newpw-confirm')" aria-label="Show password">
+            <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 5c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+        </div>
+      </div>
+      <button class="auth-btn" id="newpw-btn" onclick="doSetNewPassword()">Update Password</button>
+      <div class="auth-msg" id="newpw-msg"></div>
+    </div>
   </div>
 </div>
 
@@ -577,12 +625,6 @@ select[multiple] option{padding-left:10px;}
                 <div id="f-name-display" style="padding:8px 12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);font-family:'Roboto',sans-serif;font-size:13px;line-height:1.5;min-height:36px;display:flex;align-items:center;">— Loading… —</div>
                 <input type="hidden" id="f-name" value="">
             </div>
-   
-            <div class="field">
-                <label>Log Date</label>
-                <input type="date" id="f-date">
-            </div>
-
         </div>
    
         <hr style="margin:25px 0;border-color:var(--border)">
@@ -690,8 +732,8 @@ select[multiple] option{padding-left:10px;}
         <div class="metric-card" id="tm-qf-card"><p class="m-label">Quality Rate</p><p class="m-value" id="tm-qf">—</p><p class="m-sub" id="tm-reopened">0 reopened</p></div>
       </div>
       <div class="section"><p class="section-title" id="team-logs-title">Today's Logs</p>
-        <table class="data-table"><thead><tr><th>Developer</th><th>Domain</th><th>Tickets</th><th>Tokens</th><th>Cost</th><th>PRs</th><th>Reopened</th><th>Quality Factor</th><th>Notes</th></tr></thead>
-        <tbody id="team-tbody"><tr><td colspan="9"><div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-title">Loading team data</div><div class="empty-state-sub">Fetching today's submissions…</div></div></td></tr></tbody></table>
+        <table class="data-table"><thead><tr><th>Developer</th><th>Domain</th><th>Tickets</th><th>Tokens</th><th>Cost</th><th>PRs</th><th>Reopened</th><th>Time Saved</th><th>Quality Factor</th><th>Notes</th></tr></thead>
+        <tbody id="team-tbody"><tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-title">Loading team data</div><div class="empty-state-sub">Fetching today's submissions…</div></div></td></tr></tbody></table>
       </div>
     </div>
  
@@ -1018,6 +1060,36 @@ select[multiple] option{padding-left:10px;}
         <div class="divider"></div>
         <p style="font-size:11px;color:var(--text-faint);line-height:1.8;font-family:'Roboto',sans-serif;">Settings are saved locally in your browser. Update cost per 1K tokens whenever pricing changes. The target cost per ticket controls the green/amber threshold on metric cards.</p>
       </div>
+      <div class="settings-card" style="margin-top:20px;">
+        <h3>Change Password</h3>
+        <p style="font-size:12px;color:var(--text-faint);margin-bottom:16px;">Update the password for your account. You'll stay signed in after changing it.</p>
+        <div class="form-grid" style="max-width:480px;">
+          <div class="field">
+            <label>New Password</label>
+            <div class="auth-password-wrap">
+              <input type="password" id="chpw-new" placeholder="Min 6 characters" autocomplete="new-password">
+              <button type="button" class="auth-password-toggle" id="chpw-new-toggle" onclick="togglePasswordVisibility('chpw-new')" aria-label="Show password">
+                <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 5c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="field">
+            <label>Confirm New Password</label>
+            <div class="auth-password-wrap">
+              <input type="password" id="chpw-confirm" placeholder="Repeat new password" autocomplete="new-password">
+              <button type="button" class="auth-password-toggle" id="chpw-confirm-toggle" onclick="togglePasswordVisibility('chpw-confirm')" aria-label="Show password">
+                <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 5c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="chpw-btn" onclick="doChangePassword()">Update Password</button>
+          <span class="status-msg" id="chpw-status"></span>
+        </div>
+      </div>
     </div>
  
   </main>
@@ -1051,6 +1123,126 @@ function switchAuthTab(tab){
   document.getElementById('auth-signup-form').style.display = tab==='signup' ? '' : 'none';
   document.getElementById('tab-login').classList.toggle('active', tab==='login');
   document.getElementById('tab-signup').classList.toggle('active', tab==='signup');
+  // Hide reset panels when switching tabs
+  document.getElementById('auth-forgot-panel').style.display='none';
+  document.getElementById('auth-newpw-panel').style.display='none';
+  document.getElementById('auth-tabs').style.display='';
+}
+
+/* ── Forgot password: show request panel ──────────────────────── */
+function showForgotPassword(){
+  document.getElementById('auth-login-form').style.display='none';
+  document.getElementById('auth-signup-form').style.display='none';
+  document.getElementById('auth-tabs').style.display='none';
+  document.getElementById('auth-forgot-panel').style.display='';
+  document.getElementById('auth-newpw-panel').style.display='none';
+  document.getElementById('reset-msg').textContent='';
+  document.getElementById('reset-msg').className='auth-msg';
+  const emailInput=document.getElementById('login-email');
+  if(emailInput && emailInput.value) document.getElementById('reset-email').value=emailInput.value;
+}
+
+function hideForgotPassword(){
+  document.getElementById('auth-forgot-panel').style.display='none';
+  document.getElementById('auth-tabs').style.display='';
+  switchAuthTab('login');
+}
+
+/* ── Send password reset email ────────────────────────────────── */
+async function doSendPasswordReset(){
+  const email=document.getElementById('reset-email').value.trim();
+  const msgEl=document.getElementById('reset-msg');
+  const btn=document.getElementById('reset-send-btn');
+  msgEl.textContent=''; msgEl.className='auth-msg';
+  if(!email){ msgEl.className='auth-msg err'; msgEl.textContent='Please enter your email address.'; return; }
+  btn.disabled=true; btn.textContent='Sending…';
+  const {error}=await _sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
+  btn.disabled=false; btn.textContent='Send Reset Link';
+  if(error){ msgEl.className='auth-msg err'; msgEl.textContent=error.message; return; }
+  msgEl.className='auth-msg ok';
+  msgEl.textContent='✓ Reset link sent! Check your email and click the link to set a new password.';
+}
+
+/* ── Set new password (after clicking email link) ─────────────── */
+async function doSetNewPassword(){
+  const pw=document.getElementById('newpw-password').value;
+  const confirm=document.getElementById('newpw-confirm').value;
+  const msgEl=document.getElementById('newpw-msg');
+  const btn=document.getElementById('newpw-btn');
+  msgEl.textContent=''; msgEl.className='auth-msg';
+  if(!pw){ msgEl.className='auth-msg err'; msgEl.textContent='Please enter a new password.'; return; }
+  if(pw.length<6){ msgEl.className='auth-msg err'; msgEl.textContent='Password must be at least 6 characters.'; return; }
+  if(pw!==confirm){ msgEl.className='auth-msg err'; msgEl.textContent='Passwords do not match.'; return; }
+  if(!_recoveryTokens){ msgEl.className='auth-msg err'; msgEl.textContent='Session expired — please request a new reset link.'; return; }
+
+  btn.disabled=true; btn.textContent='Updating…';
+
+  try{
+    // Temporarily restore the recovery session in memory so updateUser has a valid token.
+    // We never let this session persist to localStorage — sign out immediately after.
+    const {error:sessionErr} = await _sb.auth.setSession({
+      access_token: _recoveryTokens.access_token,
+      refresh_token: _recoveryTokens.refresh_token
+    });
+    if(sessionErr) throw sessionErr;
+
+    // Now update the password while the session is active
+    const {data, error} = await _sb.auth.updateUser({password: pw});
+    if(error) throw error;
+
+    // Sign out again so the session doesn't linger in localStorage (local-only —
+    // no need to revoke server-side here, the password is already changed)
+    await _sb.auth.signOut({ scope: 'local' });
+
+    // Clear recovery state
+    _passwordRecoveryMode = false;
+    _recoveryTokens = null;
+
+    btn.disabled=false; btn.textContent='Update Password';
+    msgEl.className='auth-msg ok';
+    msgEl.textContent='✓ Password updated! Please sign in with your new password.';
+
+    // After a short delay, return to the normal login screen
+    setTimeout(()=>{
+      document.getElementById('auth-newpw-panel').style.display='none';
+      document.getElementById('auth-tabs').style.display='';
+      document.getElementById('auth-login-form').style.display='';
+      document.getElementById('tab-login').classList.add('active');
+      document.getElementById('tab-signup').classList.remove('active');
+      document.getElementById('newpw-password').value='';
+      document.getElementById('newpw-confirm').value='';
+    }, 2000);
+
+  }catch(e){
+    // If session restore failed, clear the local copy directly (not via signOut(), which
+    // would revoke the token server-side regardless of scope) and ask for a new link
+    try{ window.localStorage.removeItem('devx-auth-token'); }catch(_){}
+    btn.disabled=false; btn.textContent='Update Password';
+    msgEl.className='auth-msg err';
+    msgEl.textContent = e.message && e.message.includes('session')
+      ? 'Session expired — please request a new password reset link.'
+      : (e.message || 'Failed to update password. Please try again.');
+  }
+}
+
+/* ── Change password while logged in (Settings page) ─────────── */
+async function doChangePassword(){
+  const pw=document.getElementById('chpw-new').value;
+  const confirm=document.getElementById('chpw-confirm').value;
+  const statusEl=document.getElementById('chpw-status');
+  const btn=document.getElementById('chpw-btn');
+  statusEl.textContent=''; statusEl.className='status-msg';
+  if(!pw){ statusEl.className='status-msg err'; statusEl.textContent='Please enter a new password.'; return; }
+  if(pw.length<6){ statusEl.className='status-msg err'; statusEl.textContent='Password must be at least 6 characters.'; return; }
+  if(pw!==confirm){ statusEl.className='status-msg err'; statusEl.textContent='Passwords do not match.'; return; }
+  btn.disabled=true; btn.textContent='Updating…';
+  const {error}=await _sb.auth.updateUser({password:pw});
+  btn.disabled=false; btn.textContent='Update Password';
+  if(error){ statusEl.className='status-msg err'; statusEl.textContent=error.message; return; }
+  statusEl.className='status-msg ok'; statusEl.textContent='✓ Password updated successfully!';
+  document.getElementById('chpw-new').value='';
+  document.getElementById('chpw-confirm').value='';
+  setTimeout(()=>{ statusEl.textContent=''; statusEl.className='status-msg'; },3000);
 }
 
 /* ── Password show/hide toggle ────────────────────────────────── */
@@ -1111,7 +1303,16 @@ async function doSignup(){
 async function doLogout(){
   await _sb.auth.signOut();
   currentUser=null; currentProfile=null; isAdmin=false;
+  _passwordRecoveryMode=false;
+  // Fully restore the auth overlay to its default login state
   document.getElementById('auth-overlay').style.display='flex';
+  document.getElementById('auth-tabs').style.display='';
+  document.getElementById('auth-login-form').style.display='';
+  document.getElementById('auth-signup-form').style.display='none';
+  document.getElementById('auth-forgot-panel').style.display='none';
+  document.getElementById('auth-newpw-panel').style.display='none';
+  document.getElementById('tab-login').classList.add('active');
+  document.getElementById('tab-signup').classList.remove('active');
   document.getElementById('login-email').value='';
   document.getElementById('login-password').value='';
   document.getElementById('login-msg').textContent='';
@@ -1203,13 +1404,100 @@ function setLogMyDayName(fullName){
 }
 
 /* ── Boot: check existing session ──────────────────────────────── */
+
+// Detect a password-recovery token in the URL hash BEFORE initialising auth.
+// Supabase puts #access_token=...&type=recovery in the URL when the user clicks
+// the reset link. We need to intercept this early so we can block the automatic
+// SIGNED_IN event that fires alongside PASSWORD_RECOVERY and would otherwise
+// log the user straight into the app without them setting a new password.
+let _passwordRecoveryMode = false;
+let _recoveryTokens = null; // { access_token, refresh_token } — held in memory only
+
+(async function detectRecoveryToken(){
+  try{
+    const hash = window.location.hash;
+    if(!hash || !hash.includes('type=recovery')) return;
+
+    // Parse the access_token and refresh_token out of the URL hash
+    const params = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
+    const accessToken  = params.get('access_token');
+    const refreshToken = params.get('refresh_token');
+    if(!accessToken) return;
+
+    _passwordRecoveryMode = true;
+
+    // Call setSession NOW — while the token is fresh — so Supabase exchanges it
+    // and gives us back a fully refreshed session with a normal expiry window.
+    // We save those refreshed tokens in memory for use at submit time.
+    const {data:sessionData} = await _sb.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken || ''
+    });
+    if(sessionData?.session){
+      _recoveryTokens = {
+        access_token:  sessionData.session.access_token,
+        refresh_token: sessionData.session.refresh_token
+      };
+    } else {
+      // Fallback: store the raw URL tokens if setSession didn't return a refreshed session
+      _recoveryTokens = { access_token: accessToken, refresh_token: refreshToken || '' };
+    }
+
+    // Clear the persisted copy of this session directly from storage — do NOT call
+    // supabase.auth.signOut() here. Per Supabase's own docs, signOut() revokes the
+    // CURRENT session's tokens server-side no matter what scope you pass it — 'local'
+    // vs 'global' only controls whether OTHER devices also get signed out. So calling
+    // it here (even scoped 'local') was killing the recovery token the instant the page
+    // loaded, before you could even type a new password — which is why it kept saying
+    // "session expired" right away. Removing the storage key directly keeps the
+    // in-memory session (and _recoveryTokens) valid for the actual update later, while
+    // still stopping a page refresh from silently logging you in without a password change.
+    try{ window.localStorage.removeItem('devx-auth-token'); }catch(e){}
+
+    // Clean the token fragment from the URL so it can't be replayed on refresh
+    try{ window.history.replaceState(null,'',window.location.pathname+window.location.search); }catch(e){}
+
+    // Show the "Set new password" panel
+    const overlay = document.getElementById('auth-overlay');
+    if(overlay) overlay.style.display = 'flex';
+    ['auth-login-form','auth-signup-form','auth-forgot-panel'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.style.display='none';
+    });
+    const tabs=document.getElementById('auth-tabs'); if(tabs) tabs.style.display='none';
+    const panel=document.getElementById('auth-newpw-panel'); if(panel) panel.style.display='';
+    const msg=document.getElementById('newpw-msg'); if(msg) msg.textContent='';
+  }catch(e){}
+})();
+
 (async function initAuth(){
-  const {data:{session}} = await _sb.auth.getSession();
-  if(session && session.user){
-    await onAuthSuccess(session.user);
+  // Wait a tick so the async detectRecoveryToken IIFE above has time to sign out
+  // before we attempt to restore a session from localStorage.
+  await new Promise(r=>setTimeout(r,0));
+  // If we are in password-recovery mode, skip restoring the existing session —
+  // the user must set a new password first before being considered logged in.
+  if(!_passwordRecoveryMode){
+    const {data:{session}} = await _sb.auth.getSession();
+    if(session && session.user){
+      await onAuthSuccess(session.user);
+    }
   }
   // Listen for auth changes (e.g. email confirmation redirect)
   _sb.auth.onAuthStateChange(async(_event, session)=>{
+    if(_event==='PASSWORD_RECOVERY'){
+      // Confirm recovery mode and show the set-new-password panel
+      _passwordRecoveryMode = true;
+      const overlay=document.getElementById('auth-overlay');
+      overlay.style.display='flex';
+      ['auth-login-form','auth-signup-form','auth-forgot-panel'].forEach(id=>{
+        const el=document.getElementById(id); if(el) el.style.display='none';
+      });
+      document.getElementById('auth-tabs').style.display='none';
+      document.getElementById('auth-newpw-panel').style.display='';
+      document.getElementById('newpw-msg').textContent='';
+      return;
+    }
+    // Block the SIGNED_IN event that Supabase fires alongside PASSWORD_RECOVERY
+    if(_passwordRecoveryMode) return;
     if(session && session.user && !currentUser){
       await onAuthSuccess(session.user);
     }
@@ -1250,6 +1538,10 @@ async function sbFetch(path,options={}){
  
 function loading(show){document.getElementById('loading-bar').className='loading-bar'+(show?' active':'');}
 function domainClass(d){return(d||'').toLowerCase().replace(' ','');}
+// Parse a 'YYYY-MM-DD' string as a local-time Date (avoids UTC-midnight timezone shift) — Bug 1 fix
+function parseLocalDate(dateStr){const [y,m,d]=dateStr.split('-').map(Number);return new Date(y,m-1,d);}
+// Prefer the stored dollars_spent value (what the user actually logged); fall back to the recalculated cost — Bug 2 fix
+function rowCost(r,s){return r.dollars_spent!=null ? r.dollars_spent : (r.tokens_used||0)/1000*(s.costPer1K||0);}
  
 
 function renderComparisonTableHead() {
@@ -1351,7 +1643,6 @@ function showPage(id,el){
  
 renderComparisonTableHead();
 document.getElementById('today-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'short',year:'numeric'});
-document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
  
 function addRecord(){
  
@@ -1367,7 +1658,14 @@ margin-bottom:20px;
 <h3 class="record-card-title" style="margin-bottom:15px;color:var(--cyan)">
 Record
 </h3>
- 
+
+<div class="form-grid" style="margin-bottom:16px;">
+<div class="field">
+<label>Log Date <span class="req-star">*</span></label>
+<input type="date" class="r-date">
+</div>
+</div>
+
 <div class="form-grid">
 <div class="field">
 <label>Domain <span class="req-star">*</span></label>
@@ -1540,6 +1838,7 @@ function renumberRecords(){
    the log is successfully submitted.                              */
 const LOG_DRAFT_KEY='devx-log-draft';
 const LOG_DRAFT_FIELDS=[
+  ['r-date','date'],
   ['r-domain','domain'],['r-ticket-type','ticketType'],['r-epic','epic'],
   ['r-ticket-number','ticketNumber'],['r-ticket-status','ticketStatus'],
   ['r-tickets','tickets'],['r-tokens','tokens'],['r-dollars','dollars'],
@@ -1554,7 +1853,6 @@ function saveLogDraft(){
   _logDraftTimer=setTimeout(()=>{
     try{
       const cards=document.querySelectorAll('.record-card');
-      const dateEl=document.getElementById('f-date');
       if(!cards.length){ localStorage.removeItem(LOG_DRAFT_KEY); return; }
       const records=Array.from(cards).map(card=>{
         const rec={};
@@ -1564,7 +1862,7 @@ function saveLogDraft(){
         });
         return rec;
       });
-      localStorage.setItem(LOG_DRAFT_KEY, JSON.stringify({date:dateEl?dateEl.value:'', records}));
+      localStorage.setItem(LOG_DRAFT_KEY, JSON.stringify({records}));
     }catch(e){}
   },250);
 }
@@ -1580,9 +1878,6 @@ function restoreLogDraft(){
     if(raw) draft=JSON.parse(raw);
   }catch(e){}
   if(!draft || !Array.isArray(draft.records) || !draft.records.length) return;
-
-  const dateEl=document.getElementById('f-date');
-  if(dateEl && draft.date) dateEl.value=draft.date;
 
   draft.records.forEach(rec=>{
     addRecord();
@@ -1600,7 +1895,6 @@ function restoreLogDraft(){
 restoreLogDraft();
 document.getElementById('records-container').addEventListener('input', saveLogDraft);
 document.getElementById('records-container').addEventListener('change', saveLogDraft);
-document.getElementById('f-date').addEventListener('change', saveLogDraft);
  
 async function submitLog(){
  
@@ -1608,7 +1902,6 @@ const statusEl=document.getElementById('submit-status');
 const btn=document.getElementById('submit-btn');
  
 const name=document.getElementById('f-name').value;
-const date=document.getElementById('f-date').value;
  
 if(!name){
 statusEl.className='status-msg err';
@@ -1624,18 +1917,13 @@ statusEl.textContent='Add at least one record';
 return;
 }
 
-if(!date){
-statusEl.className='status-msg err';
-statusEl.textContent='Select a log date';
-return;
-}
-
 // Validate required fields on every record card before saving anything
 for(let i=0;i<cards.length;i++){
   const card=cards[i];
   const n=i+1;
   const val=sel=>card.querySelector(sel).value.trim();
 
+  if(!val('.r-date')){statusEl.className='status-msg err';statusEl.textContent='Record #'+n+': select a log date';return;}
   if(!val('.r-domain')){statusEl.className='status-msg err';statusEl.textContent='Record #'+n+': select a domain';return;}
   if(!val('.r-ticket-type')){statusEl.className='status-msg err';statusEl.textContent='Record #'+n+': select a ticket type';return;}
   if(!val('.r-epic')){statusEl.className='status-msg err';statusEl.textContent='Record #'+n+': enter the epic number';return;}
@@ -1672,7 +1960,7 @@ cards.forEach(card=>{
 payload.push({
  
 developer_name:name,
-log_date:date,
+log_date:card.querySelector('.r-date').value,
  
 epic_number:
       card.querySelector('.r-epic').value || null,
@@ -1793,7 +2081,7 @@ async function loadTeamView(){
 
   const tbody=document.getElementById('team-tbody');
 
-  tbody.innerHTML='<tr><td colspan="9"><div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-title">Loading data</div><div class="empty-state-sub">Fetching team submissions…</div></div></td></tr>';
+  tbody.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-title">Loading data</div><div class="empty-state-sub">Fetching team submissions…</div></div></td></tr>';
 
   loading(true);
 
@@ -1818,7 +2106,7 @@ async function loadTeamView(){
       document.getElementById('tm-qf-card').className='metric-card';
 
       tbody.innerHTML=
-      '<tr><td colspan="9"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">No submissions found</div><div class="empty-state-sub">No daily logs have been submitted for this date range yet.</div></div></td></tr>';
+      '<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">No submissions found</div><div class="empty-state-sub">No daily logs have been submitted for this date range yet.</div></div></td></tr>';
 
       return;
     }
@@ -1849,7 +2137,7 @@ async function loadTeamView(){
 
     const timeSaved=totManual-totHours;
 
-    const totCost=totTokens/1000*(s.costPer1K || 0);
+    const totCost=rows.reduce((acc,r)=>acc+rowCost(r,s),0);
 
     const qf=
       totTickets>0
@@ -1877,7 +2165,7 @@ async function loadTeamView(){
     tbody.innerHTML=rows.map(r=>{
 
       const cost=
-        (r.tokens_used||0)/1000*(s.costPer1K || 0);
+        rowCost(r,s);
 
       return `
       <tr>
@@ -1914,6 +2202,13 @@ async function loadTeamView(){
           ${r.ticket_reopened||0}
         </td>
 
+        <td class="mono">
+          ${(() => {
+            const timeSaved = (r.manual_estimated_hours||0) - (r.hours_worked||0);
+            return (timeSaved>=0?'+':'-')+Math.abs(timeSaved).toFixed(1);
+          })()}
+        </td>
+
         <td>
           ${
             (() => {
@@ -1947,7 +2242,7 @@ async function loadTeamView(){
 
     tbody.innerHTML=
     `<tr>
-      <td colspan="9"
+      <td colspan="10"
       class="empty"
       style="color:var(--red)">
       // error: ${e.message}
@@ -2162,9 +2457,11 @@ async function loadWeekly(){
   const s=getSettings();loading(true);
   const devSelect=document.getElementById('weekly-developer');
   const selectedDev=devSelect ? devSelect.value : '';
-  // Build set of registered user names from the dropdown options
-  const registeredNames=devSelect ? Array.from(devSelect.options).map(o=>o.value).filter(Boolean) : [];
   try{
+    // Fetch registered (non-admin) developer names directly from Supabase rather than the
+    // weekly-developer dropdown, which is populated asynchronously and may not be ready yet — Bug 5 fix
+    const {data:profiles} = await _sb.from('profiles').select('full_name,role');
+    const registeredNames = (profiles||[]).filter(p=>p.role!=='admin').map(p=>p.full_name).filter(Boolean);
     const rows=await sbFetch(TABLE+'?log_date=gte.'+from+'&log_date=lte.'+to+'&order=log_date.asc',{headers:{'Prefer':'return=representation'}});
     // Always restrict to registered users only
     const registeredSet=new Set(registeredNames);
@@ -2173,10 +2470,14 @@ async function loadWeekly(){
     if(!filteredRows||filteredRows.length===0){document.getElementById('insights-cont').innerHTML='<div class="insight"><div class="insight-icon">📭</div><p>No data logged for the selected filter.</p></div>';weeklyAllTicketRows=[];renderWeeklyTicketInsights([]);const dw=document.getElementById('weekly-ticket-day-wrap');if(dw)dw.style.display='none';return;}
     const byDate={};filteredRows.forEach(r=>{if(!byDate[r.log_date])byDate[r.log_date]=[];byDate[r.log_date].push(r);});
     const dates=Object.keys(byDate).sort();
-    const labels=dates.map(d=>{const dt=new Date(d);return DAYS[dt.getDay()===0?6:dt.getDay()-1];});
+    const labels=dates.map(d=>{const dt=parseLocalDate(d);return DAYS[dt.getDay()===0?6:dt.getDay()-1];});
     const ticketData=dates.map(d=>byDate[d].reduce((s,r)=>s+(r.ticket_closed||0),0));
     const tokenData=dates.map(d=>byDate[d].reduce((s,r)=>s+(r.tokens_used||0),0));
-    const costData=dates.map((d,i)=>ticketData[i]>0?parseFloat((tokenData[i]/1000*s.costPer1K/ticketData[i]).toFixed(4)):0);
+    const dollarsData=dates.map(d=>byDate[d].reduce((acc,r)=>acc+rowCost(r,s),0));
+    // Unique ticket IDs logged that day, regardless of whether they were marked closed —
+    // used as the denominator for Tokens Per Ticket / Cost Per Ticket so unclosed tickets still count.
+    const uniqueTicketsData=dates.map(d=>new Set(byDate[d].map(r=>(r.ticket_number||'Unknown Ticket').toString())).size);
+    const costData=dates.map((d,i)=>uniqueTicketsData[i]>0?parseFloat((dollarsData[i]/uniqueTicketsData[i]).toFixed(4)):0);
     const totTickets=filteredRows.reduce((s,r)=>s+(r.ticket_closed||0),0);
     const totTokens=filteredRows.reduce((s,r)=>s+(r.tokens_used||0),0);
     const totReopened=filteredRows.reduce((s,r)=>s+(r.ticket_reopened||0),0);
@@ -2184,7 +2485,7 @@ async function loadWeekly(){
     const totManualHours=filteredRows.reduce((s,r)=>s+(r.manual_estimated_hours||0),0);
     const totWorkedHours=filteredRows.reduce((s,r)=>s+(r.hours_worked||0),0);
     const timeSavedTotal=totManualHours-totWorkedHours;
-    const totCost=totTokens/1000*s.costPer1K;
+    const totCost=filteredRows.reduce((acc,r)=>acc+rowCost(r,s),0);
     const avgCPT=totTickets>0?totCost/totTickets:0;
     const qf=totTickets>0?1-totReopened/totTickets:1;
     document.getElementById('wm-tickets').textContent=totTickets;
@@ -2208,7 +2509,8 @@ async function loadWeekly(){
         prs_merged:0,
         ticket_reopened:0,
         manual_estimated_hours:0,
-        hours_worked:0
+        hours_worked:0,
+        cost:0
       };
       devSummary[name].ticket_closed += r.ticket_closed||0;
       devSummary[name].tokens_used += r.tokens_used||0;
@@ -2216,11 +2518,12 @@ async function loadWeekly(){
       devSummary[name].ticket_reopened += r.ticket_reopened||0;
       devSummary[name].manual_estimated_hours += r.manual_estimated_hours||0;
       devSummary[name].hours_worked += r.hours_worked||0;
+      devSummary[name].cost += rowCost(r,s);
     });
 
     const weeklyDevTbody=document.getElementById('weekly-dev-tbody');
     weeklyDevTbody.innerHTML=Object.values(devSummary).sort((a,b)=>a.developer_name.localeCompare(b.developer_name)).map(r=>{
-      const cost=(r.tokens_used||0)/1000*(s.costPer1K||0);
+      const cost=r.cost||0;
       const timeSaved=r.manual_estimated_hours-r.hours_worked;
       const closedCount=r.ticket_closed||0;
       const qf=closedCount>0?1-(r.ticket_reopened||0)/closedCount:1;
@@ -2288,8 +2591,8 @@ async function loadWeekly(){
     const prsTotals=dates.map(d=>byDate[d].reduce((sum,r)=>sum+(r.prs_merged||0),0));
     if(devPrChartInst)devPrChartInst.destroy();
     devPrChartInst=new Chart(document.getElementById('devPrChart'),{type:'line',data:{labels,datasets:[{label:'PRs Merged',data:prsTotals,borderColor:'#40a68b',backgroundColor:'rgba(64,166,139,0.07)',fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:'#40a68b',pointBorderColor:chartBgColor(),pointBorderWidth:2},{label:'PRs Raised',data:prsRaisedTotals,borderColor:'#d9a15a',backgroundColor:'rgba(217,161,90,0.07)',fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:'#d9a15a',pointBorderColor:chartBgColor(),pointBorderWidth:2}]},options:prOpts,plugins:[dataLabelPlugin]});
-    const tokensPerTicket=dates.map((d,i)=>ticketData[i]>0?parseFloat((tokenData[i]/ticketData[i]).toFixed(2)):0);
-    const costPerTicket=dates.map((d,i)=>ticketData[i]>0?parseFloat((costData[i]).toFixed(4)):0);
+    const tokensPerTicket=dates.map((d,i)=>uniqueTicketsData[i]>0?parseFloat((tokenData[i]/uniqueTicketsData[i]).toFixed(2)):0);
+    const costPerTicket=dates.map((d,i)=>uniqueTicketsData[i]>0?parseFloat((costData[i]).toFixed(4)):0);
     const dualAxisOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:chartLabelColor(),font:{family:"'Roboto',sans-serif",size:12}}},tooltip:{callbacks:{title:items=>formatDevDate(dates[items[0].dataIndex])}},dataLabelPlugin:{color:chartLabelColor(),fontSize:11}},scales:{y:{type:'linear',position:'left',beginAtZero:true,ticks:{color:chartAxisColor(),callback:v=>v.toFixed(0)},grid:{color:chartGridColor()},title:{display:true,text:'Tokens Per Ticket',color:chartLabelColor(),font:{family:"'Roboto',sans-serif",size:11}}},y1:{type:'linear',position:'right',beginAtZero:true,ticks:{color:chartAxisColor(),callback:v=>'$'+v.toFixed(3)},grid:{display:false},title:{display:true,text:'Cost Per Ticket',color:chartLabelColor(),font:{family:"'Roboto',sans-serif",size:11}}},x:{ticks:{color:chartAxisColor()},grid:{display:false}}}};
     if(devTokenChartInst)devTokenChartInst.destroy();
     devTokenChartInst=new Chart(document.getElementById('devTokenChart'),{type:'line',data:{labels,datasets:[{label:'Tokens Per Ticket',data:tokensPerTicket,borderColor:'#b47dff',backgroundColor:'rgba(180,125,255,0.07)',fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:'#b47dff',pointBorderColor:chartBgColor(),pointBorderWidth:2,yAxisID:'y'},{label:'Cost Per Ticket',data:costPerTicket,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.07)',fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:'#10b981',pointBorderColor:chartBgColor(),pointBorderWidth:2,yAxisID:'y1'}]},options:dualAxisOpts,plugins:[dataLabelPlugin]});
@@ -2762,14 +3065,14 @@ async function loadHistory(){
   try{
     // Normal users only see their own logs; admins see all
     let query = TABLE+'?order=log_date.desc,developer_name.asc&limit=200';
-    const userName = currentProfile?.full_name || currentUser?.user_metadata?.full_name;
+    const userName = (currentProfile?.full_name || currentUser?.user_metadata?.full_name || '').trim();
     if(!isAdmin && userName){
       query = TABLE+'?developer_name=eq.'+encodeURIComponent(userName)+'&order=log_date.desc&limit=200';
     }
     const rows=await sbFetch(query,{headers:{'Prefer':'return=representation'}});
     if(!rows||rows.length===0){tbody.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">No logs yet</div><div class="empty-state-sub">Submit your first daily log to see your history here.</div></div></td></tr>';return;}
     tbody.innerHTML=rows.map(r=>{
-      const cost=(r.tokens_used||0)/1000*s.costPer1K;
+      const cost=rowCost(r,s);
       const qf=r.ticket_closed>0?Math.round((1-(r.ticket_reopened||0)/r.ticket_closed)*100):100;
       return`<tr><td class="mono">${r.log_date}</td><td class="dev-name">${r.developer_name}</td><td>${r.domain?`<span class="dtag ${domainClass(r.domain)}">${r.domain}</span>`:'—'}</td><td class="mono">${r.ticket_closed||0}</td><td class="mono">${((r.tokens_used||0)/1000).toFixed(1)}K</td><td class="mono">$${cost.toFixed(3)}</td><td class="mono">${r.prs_merged||0}</td><td class="mono">${r.ticket_reopened||0}</td><td style="color:${qf>=90?'var(--green)':'var(--amber)'};font-family:'Roboto',sans-serif;font-size:12px">${qf}%</td><td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.notes||''}">${r.notes||'—'}</td></tr>`;
     }).join('');
@@ -3602,7 +3905,6 @@ loadSettings();
 loadEpicDevelopers();
 onCompareTypeChange();
 const now=new Date();
-document.getElementById('f-date').value=now.toISOString().split('T')[0];
 const monday=new Date(now);monday.setDate(now.getDate()-(now.getDay()===0?6:now.getDay()-1));monday.setHours(0,0,0,0);const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);['epic1-start','epic2-start'].forEach(id=>document.getElementById(id).value=monday.toISOString().split('T')[0]);['epic1-end','epic2-end'].forEach(id=>document.getElementById(id).value=sunday.toISOString().split('T')[0]);
 if(!document.querySelector('.record-card')){
   addRecord();
