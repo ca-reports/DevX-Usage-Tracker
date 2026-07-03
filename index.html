@@ -554,6 +554,11 @@ select[multiple] option{padding-left:10px;}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Team Logs
       </div>
+      <div class="nav-item" data-admin-only onclick="showPage('missing',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Missing Submissions
+        <span class="nav-badge" id="missing-nav-badge" style="display:none;"></span>
+      </div>
       <div class="nav-item" data-admin-only onclick="showPage('add-issue',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Add Issue Data
@@ -614,6 +619,14 @@ select[multiple] option{padding-left:10px;}
           <div><h2>Log <span>My Day</span></h2><p>Fill in your numbers — takes 60 seconds ⚡</p></div>
           <span class="date-badge" id="today-date"></span>
         </div>
+    </div>
+    <div id="log-reminder-banner" style="display:none;align-items:center;gap:12px;background:var(--amber-dim);border:1px solid rgba(255,184,48,0.35);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:20px;">
+      <span style="font-size:20px;line-height:1;">⏰</span>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:700;color:var(--amber);">You haven't logged today's data yet</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Fill in at least one record below before you wrap up for the day.</div>
+      </div>
+      <button class="btn secondary" style="padding:6px 12px;font-size:12px;" onclick="document.getElementById('log-reminder-banner').style.display='none';">Dismiss</button>
     </div>
     <div class="log-form">
    
@@ -734,6 +747,33 @@ select[multiple] option{padding-left:10px;}
       <div class="section"><p class="section-title" id="team-logs-title">Today's Logs</p>
         <table class="data-table"><thead><tr><th>Developer</th><th>Domain</th><th>Tickets</th><th>Tokens</th><th>Cost</th><th>PRs</th><th>Reopened</th><th>Time Saved</th><th>Quality Factor</th><th>Notes</th></tr></thead>
         <tbody id="team-tbody"><tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-title">Loading team data</div><div class="empty-state-sub">Fetching today's submissions…</div></div></td></tr></tbody></table>
+      </div>
+    </div>
+ 
+    <!-- MISSING SUBMISSIONS -->
+    <div id="page-missing" class="page">
+      <div class="page-header">
+        <div class="header-row">
+          <div>
+            <h2>Missing <span>Submissions</span></h2>
+            <p id="missing-view-desc">Select a day to see who hasn't logged their data yet</p>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:10px;">
+            <div class="field">
+              <label>Day</label>
+              <input id="missing-date" type="date" value="" onchange="loadMissingSubmissions()" style="padding:8px 10px;border-radius:10px;border:1px solid var(--border-bright);background:var(--surface2);color:var(--text);font-family:'Roboto',sans-serif;font-size:13px;" />
+            </div>
+            <button class="btn secondary" onclick="loadMissingSubmissions()">↻ Refresh</button>
+          </div>
+        </div>
+      </div>
+      <div class="metric-grid">
+        <div class="metric-card warn"><p class="m-label">Missing</p><p class="m-value" id="ms-missing-count">—</p><p class="m-sub">haven't logged</p></div>
+        <div class="metric-card good"><p class="m-label">Submitted</p><p class="m-value" id="ms-submitted-count">—</p><p class="m-sub">have logged</p></div>
+        <div class="metric-card cyan"><p class="m-label">Total Developers</p><p class="m-value" id="ms-total-count">—</p><p class="m-sub">registered</p></div>
+      </div>
+      <div class="section"><p class="section-title" id="missing-section-title">Developers who haven't logged today</p>
+        <div id="missing-rows" class="lb-cards-grid"><div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-title">Loading</div><div class="empty-state-sub">Checking submissions for the selected day…</div></div></div>
       </div>
     </div>
  
@@ -932,7 +972,10 @@ select[multiple] option{padding-left:10px;}
     <div id="page-history" class="page">
       <div class="page-header">
         <div class="header-row"><div><h2>Log <span>History</span></h2><p>All submitted entries</p></div>
-        <button class="btn secondary" onclick="loadHistory()">↻ Refresh</button></div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input id="history-search" data-admin-only type="text" placeholder="🔎 Search by developer name…" oninput="filterHistoryRows()" style="display:none;padding:8px 12px;border-radius:10px;border:1px solid var(--border-bright);background:var(--surface2);color:var(--text);font-family:'Roboto',sans-serif;font-size:13px;min-width:220px;" />
+          <button class="btn secondary" onclick="loadHistory()">↻ Refresh</button>
+        </div></div>
       </div>
       <table class="data-table">
         <thead><tr><th>Date</th><th>Developer</th><th>Domain</th><th>Tickets</th><th>Tokens</th><th>Cost</th><th>PRs</th><th>Reopened</th><th>Quality</th><th>Notes</th></tr></thead>
@@ -1349,6 +1392,14 @@ async function onAuthSuccess(user){
 
   // Set "Your Name" in Log My Day to locked value
   setLogMyDayName(displayName);
+
+  // Non-admins: check if they've already logged today and show a reminder if not.
+  // Admins: refresh the sidebar "Missing Submissions" badge for today.
+  if(!isAdmin){
+    checkTodaySubmission();
+  } else {
+    updateMissingNavBadge();
+  }
 }
 
 /* ── Role-based nav visibility ─────────────────────────────────── */
@@ -1627,6 +1678,7 @@ function showPage(id,el){
   document.getElementById('page-'+id).classList.add('active');
   el.classList.add('active');
   if(id==='team')loadTeamView();
+  if(id==='missing')loadMissingSubmissions();
   if(id==='weekly')loadWeekly();
   if(id==='leaderboard')loadLeaderboard();
   if(id==='history'){
@@ -2025,6 +2077,8 @@ statusEl.className='status-msg ok';
 statusEl.textContent='✓ Saved '+payload.length+' record'+(payload.length!==1?'s':'');
 showSaveToast('Saved '+payload.length+' record'+(payload.length!==1?'s':''));
 clearLogDraft();
+const reminderBanner=document.getElementById('log-reminder-banner');
+if(reminderBanner) reminderBanner.style.display='none';
 
 // Reset the form — wipe all record cards and add one blank one
 const container=document.getElementById('records-container');
@@ -2265,6 +2319,139 @@ async function loadTeamView(){
     loading(false);
 
   }
+}
+
+/* ======================================================================
+   "Haven't logged today" reminder (developers) — Log My Day page
+   ====================================================================== */
+async function checkTodaySubmission(){
+  const banner=document.getElementById('log-reminder-banner');
+  if(!banner || !currentProfile) return;
+  const name=(currentProfile.full_name||'').trim();
+  if(!name) return;
+  const today=new Date().toISOString().split('T')[0];
+  try{
+    const rows=await sbFetch(
+      TABLE+'?developer_name=ilike.'+encodeURIComponent(name.normalize('NFC'))+'&log_date=eq.'+today+'&select=log_date&limit=1',
+      {headers:{'Prefer':'return=representation'}}
+    );
+    banner.style.display = (rows && rows.length) ? 'none' : 'flex';
+  }catch(e){
+    // Fail silently — a missed reminder is better than a broken page
+  }
+}
+
+/* ======================================================================
+   MISSING SUBMISSIONS (admin) — who hasn't logged for a given day
+   ====================================================================== */
+async function updateMissingNavBadge(){
+  const badge=document.getElementById('missing-nav-badge');
+  if(!badge) return;
+  try{
+    const today=new Date().toISOString().split('T')[0];
+    const {data:profiles} = await _sb.from('profiles').select('full_name,role');
+    const registeredNames=(profiles||[]).filter(p=>p.role!=='admin').map(p=>p.full_name).filter(Boolean);
+    if(!registeredNames.length){ badge.style.display='none'; return; }
+    const rows=await sbFetch(TABLE+'?log_date=eq.'+today+'&select=developer_name',{headers:{'Prefer':'return=representation'}});
+    const submittedSet=new Set((rows||[]).map(r=>r.developer_name));
+    const missingCount=registeredNames.filter(n=>!submittedSet.has(n)).length;
+    if(missingCount>0){ badge.textContent=missingCount; badge.style.display=''; }
+    else { badge.style.display='none'; }
+  }catch(e){
+    badge.style.display='none';
+  }
+}
+
+async function loadMissingSubmissions(){
+  const dateInput=document.getElementById('missing-date');
+  const today=new Date().toISOString().split('T')[0];
+  if(dateInput && !dateInput.value) dateInput.value=today;
+  const day = dateInput && dateInput.value ? dateInput.value : today;
+
+  const desc=document.getElementById('missing-view-desc');
+  const sectionTitle=document.getElementById('missing-section-title');
+  const isToday = day===today;
+  const dayLabel=new Date(day).toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'short',year:'numeric'});
+  if(desc) desc.textContent = isToday ? `Showing who hasn't logged today (${dayLabel})` : `Showing who hadn't logged on ${dayLabel}`;
+  if(sectionTitle) sectionTitle.textContent = isToday ? "Developers who haven't logged today" : `Developers who hadn't logged on ${dayLabel}`;
+
+  const rowsEl=document.getElementById('missing-rows');
+  rowsEl.innerHTML='<div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-title">Loading</div><div class="empty-state-sub">Checking submissions for the selected day…</div></div>';
+  loading(true);
+
+  try{
+    // Registered (non-admin) developers — same source used everywhere else in the app
+    const {data:profiles} = await _sb.from('profiles').select('full_name,role,email').order('full_name');
+    const registered=(profiles||[]).filter(p=>p.role!=='admin' && p.full_name);
+
+    const rows=await sbFetch(TABLE+'?log_date=eq.'+day+'&select=developer_name',{headers:{'Prefer':'return=representation'}});
+    const submittedSet=new Set((rows||[]).map(r=>r.developer_name));
+
+    const missing=registered.filter(p=>!submittedSet.has(p.full_name));
+    const submittedCount=registered.length-missing.length;
+
+    document.getElementById('ms-missing-count').textContent=missing.length;
+    document.getElementById('ms-submitted-count').textContent=submittedCount;
+    document.getElementById('ms-total-count').textContent=registered.length;
+
+    if(missing.length===0){
+      rowsEl.innerHTML='<div class="empty-state"><div class="empty-state-icon">🎉</div><div class="empty-state-title">Everyone has logged!</div><div class="empty-state-sub">All registered developers have submitted their data for this day.</div></div>';
+      return;
+    }
+
+    const AVATAR_COLORS=['#40a68b','#b47dff','#ffb830','#fb923c','#f472b6','#60a5fa','#34d399','#f87171','#a78bfa','#fbbf24','#4ade80','#38bdf8','#e879f9','#fb7185','#a3e635','#2dd4bf'];
+    rowsEl.innerHTML=missing.sort((a,b)=>a.full_name.localeCompare(b.full_name)).map((p,idx)=>{
+      const parts=p.full_name.trim().split(' ');
+      const initials=((parts[0]||'')[0]||'')+((parts[1]||'')[0]||'');
+      const email=p.email || (window._devEmailMap && window._devEmailMap[p.full_name]) || '';
+      return `<div class="lb-card">
+        <div class="lb-card-header">
+          <div class="lb-avatar" style="background:${AVATAR_COLORS[idx%AVATAR_COLORS.length]}">${initials.toUpperCase()}</div>
+          <div>
+            <div class="lb-card-name">${p.full_name}</div>
+            <div class="lb-card-email">${email}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+          <span style="font-size:11px;font-weight:700;color:var(--amber);background:var(--amber-dim);border:1px solid rgba(255,184,48,0.3);padding:4px 10px;border-radius:20px;">⏰ Not logged</span>
+        </div>
+      </div>`;
+    }).join('');
+
+    updateMissingNavBadge();
+  }catch(e){
+    rowsEl.innerHTML=`<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-title">Failed to load</div><div class="empty-state-sub">${e.message}</div></div>`;
+  }finally{
+    loading(false);
+  }
+}
+
+/* ======================================================================
+   HISTORY — client-side developer name search (admin), case-insensitive
+   ====================================================================== */
+let _historyAllRows=[];
+
+function historyRowHtml(r,s){
+  const cost=rowCost(r,s);
+  const qf=r.ticket_closed>0?Math.round((1-(r.ticket_reopened||0)/r.ticket_closed)*100):100;
+  return`<tr><td class="mono">${r.log_date}</td><td class="dev-name">${r.developer_name}</td><td>${r.domain?`<span class="dtag ${domainClass(r.domain)}">${r.domain}</span>`:'—'}</td><td class="mono">${r.ticket_closed||0}</td><td class="mono">${((r.tokens_used||0)/1000).toFixed(1)}K</td><td class="mono">$${cost.toFixed(3)}</td><td class="mono">${r.prs_merged||0}</td><td class="mono">${r.ticket_reopened||0}</td><td style="color:${qf>=90?'var(--green)':'var(--amber)'};font-family:'Roboto',sans-serif;font-size:12px">${qf}%</td><td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.notes||''}">${r.notes||'—'}</td></tr>`;
+}
+
+function filterHistoryRows(){
+  const tbody=document.getElementById('history-tbody');
+  const searchInput=document.getElementById('history-search');
+  const query=(searchInput?.value||'').trim().toLowerCase();
+  const s=getSettings();
+  if(!query){
+    tbody.innerHTML = _historyAllRows.length
+      ? _historyAllRows.map(r=>historyRowHtml(r,s)).join('')
+      : '<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">No logs yet</div><div class="empty-state-sub">Submit your first daily log to see your history here.</div></div></td></tr>';
+    return;
+  }
+  const filtered=_historyAllRows.filter(r=>(r.developer_name||'').toLowerCase().includes(query));
+  tbody.innerHTML = filtered.length
+    ? filtered.map(r=>historyRowHtml(r,s)).join('')
+    : `<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">🔎</div><div class="empty-state-title">No matches</div><div class="empty-state-sub">No developer names match "${searchInput.value}".</div></div></td></tr>`;
 }
  
 function isLightTheme(){return document.documentElement.getAttribute('data-theme')==='light';}
@@ -3071,22 +3258,26 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'){document.ge
 
 async function loadHistory(){
   const tbody=document.getElementById('history-tbody');
+  const searchInput=document.getElementById('history-search');
+  if(searchInput) searchInput.value='';
   tbody.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-title">Loading history</div><div class="empty-state-sub">Fetching your submission logs…</div></div></td></tr>';
   loading(true);const s=getSettings();
   try{
     // Normal users only see their own logs; admins see all
     let query = TABLE+'?order=log_date.desc,developer_name.asc&limit=200';
-    const userName = (currentProfile?.full_name || currentUser?.user_metadata?.full_name || '').trim();
+    // .normalize('NFC') guards against Mac-originated names stored in decomposed
+    // Unicode form (NFD) not matching the composed form used elsewhere — an
+    // eq. filter is byte-exact and silently returns 0 rows on that mismatch.
+    const userName = (currentProfile?.full_name || currentUser?.user_metadata?.full_name || '').normalize('NFC').trim();
     if(!isAdmin && userName){
-      query = TABLE+'?developer_name=eq.'+encodeURIComponent(userName)+'&order=log_date.desc&limit=200';
+      // ilike (without % wildcards) is a case-insensitive exact match — more
+      // forgiving of stray casing differences than eq. while still being exact.
+      query = TABLE+'?developer_name=ilike.'+encodeURIComponent(userName)+'&order=log_date.desc&limit=200';
     }
     const rows=await sbFetch(query,{headers:{'Prefer':'return=representation'}});
+    _historyAllRows = rows || [];
     if(!rows||rows.length===0){tbody.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">No logs yet</div><div class="empty-state-sub">Submit your first daily log to see your history here.</div></div></td></tr>';return;}
-    tbody.innerHTML=rows.map(r=>{
-      const cost=rowCost(r,s);
-      const qf=r.ticket_closed>0?Math.round((1-(r.ticket_reopened||0)/r.ticket_closed)*100):100;
-      return`<tr><td class="mono">${r.log_date}</td><td class="dev-name">${r.developer_name}</td><td>${r.domain?`<span class="dtag ${domainClass(r.domain)}">${r.domain}</span>`:'—'}</td><td class="mono">${r.ticket_closed||0}</td><td class="mono">${((r.tokens_used||0)/1000).toFixed(1)}K</td><td class="mono">$${cost.toFixed(3)}</td><td class="mono">${r.prs_merged||0}</td><td class="mono">${r.ticket_reopened||0}</td><td style="color:${qf>=90?'var(--green)':'var(--amber)'};font-family:'Roboto',sans-serif;font-size:12px">${qf}%</td><td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.notes||''}">${r.notes||'—'}</td></tr>`;
-    }).join('');
+    tbody.innerHTML=rows.map(r=>historyRowHtml(r,s)).join('');
   }catch(e){
     tbody.innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-title">Could not load history</div><div class="empty-state-sub">${e.message}</div></div></td></tr>`;
   }
