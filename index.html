@@ -2089,6 +2089,14 @@ async function loadTeamView(){
 
   try{
 
+    // Fetch registered (non-admin) developer names dynamically, same source used by Weekly view
+    const {data:profiles} = await _sb.from('profiles').select('full_name,role');
+    const registeredNonAdmin = (profiles||[]).filter(p=>p.role!=='admin' && p.full_name).map(p=>p.full_name);
+    const registeredNonAdminSet = new Set(registeredNonAdmin);
+    const totalDevs = registeredNonAdmin.length;
+    const tmSubSub=document.getElementById('tm-submitted')?.nextElementSibling;
+    if(tmSubSub) tmSubSub.textContent = 'of '+totalDevs+' devs';
+
     const rows=await sbFetch(
       TABLE+'?log_date=gte.'+from+'&log_date=lte.'+to+'&order=developer_name.asc',
       {headers:{'Prefer':'return=representation'}}
@@ -2144,7 +2152,10 @@ async function loadTeamView(){
       ? Math.round((1-totReopened/totTickets)*100)
       : 100;
 
-    document.getElementById('tm-submitted').textContent=rows.length;
+    const uniqueSubmitters=new Set(
+      rows.map(r=>r.developer_name).filter(name=>name && registeredNonAdminSet.has(name))
+    );
+    document.getElementById('tm-submitted').textContent=uniqueSubmitters.size;
     document.getElementById('tm-prs').textContent=totPrs;
     document.getElementById('tm-tokens').textContent=
       (totTokens/1000).toFixed(1)+'K';
