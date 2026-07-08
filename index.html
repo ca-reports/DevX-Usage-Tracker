@@ -2012,6 +2012,7 @@ cards.forEach(card=>{
 payload.push({
  
 developer_name:name,
+developer_id:currentUser?.id || null,
 log_date:card.querySelector('.r-date').value,
  
 epic_number:
@@ -2326,13 +2327,11 @@ async function loadTeamView(){
    ====================================================================== */
 async function checkTodaySubmission(){
   const banner=document.getElementById('log-reminder-banner');
-  if(!banner || !currentProfile) return;
-  const name=(currentProfile.full_name||'').trim();
-  if(!name) return;
+  if(!banner || !currentUser?.id) return;
   const today=new Date().toISOString().split('T')[0];
   try{
     const rows=await sbFetch(
-      TABLE+'?developer_name=ilike.'+encodeURIComponent(name.normalize('NFC'))+'&log_date=eq.'+today+'&select=log_date&limit=1',
+      TABLE+'?developer_id=eq.'+encodeURIComponent(currentUser.id)+'&log_date=eq.'+today+'&select=log_date&limit=1',
       {headers:{'Prefer':'return=representation'}}
     );
     banner.style.display = (rows && rows.length) ? 'none' : 'flex';
@@ -3263,16 +3262,11 @@ async function loadHistory(){
   tbody.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-title">Loading history</div><div class="empty-state-sub">Fetching your submission logs…</div></div></td></tr>';
   loading(true);const s=getSettings();
   try{
-    // Normal users only see their own logs; admins see all
+    // Normal users only see their own logs (matched by developer_id, not name —
+    // avoids Mac Unicode/name-encoding mismatches entirely); admins see all
     let query = TABLE+'?order=log_date.desc,developer_name.asc&limit=200';
-    // .normalize('NFC') guards against Mac-originated names stored in decomposed
-    // Unicode form (NFD) not matching the composed form used elsewhere — an
-    // eq. filter is byte-exact and silently returns 0 rows on that mismatch.
-    const userName = (currentProfile?.full_name || currentUser?.user_metadata?.full_name || '').normalize('NFC').trim();
-    if(!isAdmin && userName){
-      // ilike (without % wildcards) is a case-insensitive exact match — more
-      // forgiving of stray casing differences than eq. while still being exact.
-      query = TABLE+'?developer_name=ilike.'+encodeURIComponent(userName)+'&order=log_date.desc&limit=200';
+    if(!isAdmin && currentUser?.id){
+      query = TABLE+'?developer_id=eq.'+encodeURIComponent(currentUser.id)+'&order=log_date.desc&limit=200';
     }
     const rows=await sbFetch(query,{headers:{'Prefer':'return=representation'}});
     _historyAllRows = rows || [];
