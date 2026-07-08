@@ -2144,10 +2144,11 @@ async function loadTeamView(){
 
   try{
 
-    // Fetch registered (non-admin) developer names dynamically, same source used by Weekly view
-    const {data:profiles} = await _sb.from('profiles').select('full_name,role');
-    const registeredNonAdmin = (profiles||[]).filter(p=>p.role!=='admin' && p.full_name).map(p=>p.full_name);
-    const registeredNonAdminSet = new Set(registeredNonAdmin);
+    // Fetch registered (non-admin) developers dynamically, same source used by Weekly view.
+    // Matched by id (not name) to avoid Mac Unicode/name-encoding mismatches.
+    const {data:profiles} = await _sb.from('profiles').select('id,full_name,role');
+    const registeredNonAdmin = (profiles||[]).filter(p=>p.role!=='admin' && p.full_name);
+    const registeredNonAdminIdSet = new Set(registeredNonAdmin.map(p=>p.id));
     const totalDevs = registeredNonAdmin.length;
     const tmSubSub=document.getElementById('tm-submitted')?.nextElementSibling;
     if(tmSubSub) tmSubSub.textContent = 'of '+totalDevs+' devs';
@@ -2208,7 +2209,7 @@ async function loadTeamView(){
       : 100;
 
     const uniqueSubmitters=new Set(
-      rows.map(r=>r.developer_name).filter(name=>name && registeredNonAdminSet.has(name))
+      rows.map(r=>r.developer_id).filter(id=>id && registeredNonAdminIdSet.has(id))
     );
     document.getElementById('tm-submitted').textContent=uniqueSubmitters.size;
     document.getElementById('tm-prs').textContent=totPrs;
@@ -2348,12 +2349,13 @@ async function updateMissingNavBadge(){
   if(!badge) return;
   try{
     const today=new Date().toISOString().split('T')[0];
-    const {data:profiles} = await _sb.from('profiles').select('full_name,role');
-    const registeredNames=(profiles||[]).filter(p=>p.role!=='admin').map(p=>p.full_name).filter(Boolean);
-    if(!registeredNames.length){ badge.style.display='none'; return; }
-    const rows=await sbFetch(TABLE+'?log_date=eq.'+today+'&select=developer_name',{headers:{'Prefer':'return=representation'}});
-    const submittedSet=new Set((rows||[]).map(r=>r.developer_name));
-    const missingCount=registeredNames.filter(n=>!submittedSet.has(n)).length;
+    // Matched by id (not name) to avoid Mac Unicode/name-encoding mismatches.
+    const {data:profiles} = await _sb.from('profiles').select('id,role');
+    const registeredIds=(profiles||[]).filter(p=>p.role!=='admin').map(p=>p.id).filter(Boolean);
+    if(!registeredIds.length){ badge.style.display='none'; return; }
+    const rows=await sbFetch(TABLE+'?log_date=eq.'+today+'&select=developer_id',{headers:{'Prefer':'return=representation'}});
+    const submittedSet=new Set((rows||[]).map(r=>r.developer_id));
+    const missingCount=registeredIds.filter(id=>!submittedSet.has(id)).length;
     if(missingCount>0){ badge.textContent=missingCount; badge.style.display=''; }
     else { badge.style.display='none'; }
   }catch(e){
@@ -2379,14 +2381,15 @@ async function loadMissingSubmissions(){
   loading(true);
 
   try{
-    // Registered (non-admin) developers — same source used everywhere else in the app
-    const {data:profiles} = await _sb.from('profiles').select('full_name,role,email').order('full_name');
+    // Registered (non-admin) developers — same source used everywhere else in the app.
+    // Matched by id (not name) to avoid Mac Unicode/name-encoding mismatches.
+    const {data:profiles} = await _sb.from('profiles').select('id,full_name,role,email').order('full_name');
     const registered=(profiles||[]).filter(p=>p.role!=='admin' && p.full_name);
 
-    const rows=await sbFetch(TABLE+'?log_date=eq.'+day+'&select=developer_name',{headers:{'Prefer':'return=representation'}});
-    const submittedSet=new Set((rows||[]).map(r=>r.developer_name));
+    const rows=await sbFetch(TABLE+'?log_date=eq.'+day+'&select=developer_id',{headers:{'Prefer':'return=representation'}});
+    const submittedSet=new Set((rows||[]).map(r=>r.developer_id));
 
-    const missing=registered.filter(p=>!submittedSet.has(p.full_name));
+    const missing=registered.filter(p=>!submittedSet.has(p.id));
     const submittedCount=registered.length-missing.length;
 
     document.getElementById('ms-missing-count').textContent=missing.length;
@@ -2655,14 +2658,16 @@ async function loadWeekly(){
   const devSelect=document.getElementById('weekly-developer');
   const selectedDev=devSelect ? devSelect.value : '';
   try{
-    // Fetch registered (non-admin) developer names directly from Supabase rather than the
-    // weekly-developer dropdown, which is populated asynchronously and may not be ready yet — Bug 5 fix
-    const {data:profiles} = await _sb.from('profiles').select('full_name,role');
-    const registeredNames = (profiles||[]).filter(p=>p.role!=='admin').map(p=>p.full_name).filter(Boolean);
+    // Fetch registered (non-admin) developers directly from Supabase rather than the
+    // weekly-developer dropdown, which is populated asynchronously and may not be ready yet — Bug 5 fix.
+    // Restricted by id (not name) so Mac Unicode/name-encoding differences don't silently drop
+    // a developer's entire week of data from the view.
+    const {data:profiles} = await _sb.from('profiles').select('id,full_name,role');
+    const registeredIds = (profiles||[]).filter(p=>p.role!=='admin').map(p=>p.id).filter(Boolean);
     const rows=await sbFetch(TABLE+'?log_date=gte.'+from+'&log_date=lte.'+to+'&order=log_date.asc',{headers:{'Prefer':'return=representation'}});
     // Always restrict to registered users only
-    const registeredSet=new Set(registeredNames);
-    const baseRows=(rows||[]).filter(r=>registeredSet.has(r.developer_name));
+    const registeredIdSet=new Set(registeredIds);
+    const baseRows=(rows||[]).filter(r=>registeredIdSet.has(r.developer_id));
     const filteredRows=selectedDev ? baseRows.filter(r=>r.developer_name===selectedDev) : baseRows;
     if(!filteredRows||filteredRows.length===0){document.getElementById('insights-cont').innerHTML='<div class="insight"><div class="insight-icon">📭</div><p>No data logged for the selected filter.</p></div>';weeklyAllTicketRows=[];renderWeeklyTicketInsights([]);const dw=document.getElementById('weekly-ticket-day-wrap');if(dw)dw.style.display='none';return;}
     const byDate={};filteredRows.forEach(r=>{if(!byDate[r.log_date])byDate[r.log_date]=[];byDate[r.log_date].push(r);});
@@ -3050,12 +3055,13 @@ async function loadLeaderboard(){
   try{
     const rows=await sbFetch(TABLE+'?log_date=gte.'+from+'&log_date=lte.'+to,{headers:{'Prefer':'return=representation'}});
 
-    // Get registered user names from the weekly-developer dropdown (populated from profiles table)
-    const devDropdown=document.getElementById('weekly-developer');
-    const registeredNames=devDropdown ? new Set(Array.from(devDropdown.options).map(o=>o.value).filter(Boolean)) : new Set();
+    // Get registered (non-admin) developer ids directly from profiles — matched by id (not name)
+    // to avoid Mac Unicode/name-encoding mismatches silently dropping a developer's tickets here.
+    const {data:wlProfiles} = await _sb.from('profiles').select('id,role');
+    const registeredIds=new Set((wlProfiles||[]).filter(p=>p.role!=='admin').map(p=>p.id).filter(Boolean));
 
     // Filter rows to only registered users
-    const filteredRows=(rows||[]).filter(r=>!registeredNames.size||registeredNames.has(r.developer_name));
+    const filteredRows=(rows||[]).filter(r=>!registeredIds.size||registeredIds.has(r.developer_id));
 
     if(!filteredRows.length){lbRows.innerHTML='<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">No data found</div><div class="empty-state-sub">No registered developers have logged activity in this date range.</div></div>';return;}
 
