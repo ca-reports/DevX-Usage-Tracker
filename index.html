@@ -1586,6 +1586,30 @@ async function sbFetch(path,options={}){
   const text = await res.text();
   return text ? JSON.parse(text) : null;
 }
+
+// POST-based RPC caller — used where a plain GET+query-string request gets
+// blocked by some corporate proxies/WAFs (they flag PostgREST's ?col=eq.val
+// syntax as injection-like). A POST with a clean URL + JSON body routes
+// around that. Requires the matching SQL functions (see rpc-workaround.sql).
+async function sbRpc(fnName, params={}){
+  let authToken = SUPABASE_KEY;
+  try{
+    const {data:{session}} = await _sb.auth.getSession();
+    if(session?.access_token) authToken = session.access_token;
+  }catch(e){}
+  const res = await fetch(SUPABASE_URL+'/rest/v1/rpc/'+fnName, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer '+authToken,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(params)
+  });
+  if(!res.ok){ const err = await res.json().catch(()=>({})); throw new Error(err.message||'RPC failed: '+res.status); }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
  
 function loading(show){document.getElementById('loading-bar').className='loading-bar'+(show?' active':'');}
 function domainClass(d){return(d||'').toLowerCase().replace(' ','');}
@@ -2329,13 +2353,11 @@ async function loadTeamView(){
 async function checkTodaySubmission(){
   const banner=document.getElementById('log-reminder-banner');
   if(!banner || !currentUser?.id) return;
-  const today=new Date().toISOString().split('T')[0];
   try{
-    const rows=await sbFetch(
-      TABLE+'?developer_id=eq.'+encodeURIComponent(currentUser.id)+'&log_date=eq.'+today+'&select=log_date&limit=1',
-      {headers:{'Prefer':'return=representation'}}
-    );
-    banner.style.display = (rows && rows.length) ? 'none' : 'flex';
+    // POST-based RPC (see sbRpc) instead of GET+query-string — some corporate
+    // proxies block the latter but let a clean POST through.
+    const hasLogged = await sbRpc('has_logged_today');
+    banner.style.display = hasLogged ? 'none' : 'flex';
   }catch(e){
     // Fail silently — a missed reminder is better than a broken page
   }
@@ -3269,12 +3291,17 @@ async function loadHistory(){
   loading(true);const s=getSettings();
   try{
     // Normal users only see their own logs (matched by developer_id, not name —
-    // avoids Mac Unicode/name-encoding mismatches entirely); admins see all
-    let query = TABLE+'?order=log_date.desc,developer_name.asc&limit=200';
+    // avoids Mac Unicode/name-encoding mismatches entirely); admins see all.
+    // Non-admins go through the POST-based RPC — some corporate proxies block
+    // GET requests containing PostgREST's ?col=eq.val query syntax but let a
+    // clean POST through untouched.
+    let rows;
     if(!isAdmin && currentUser?.id){
-      query = TABLE+'?developer_id=eq.'+encodeURIComponent(currentUser.id)+'&order=log_date.desc&limit=200';
+      rows = await sbRpc('get_my_history');
+    } else {
+      const query = TABLE+'?order=log_date.desc,developer_name.asc&limit=200';
+      rows = await sbFetch(query,{headers:{'Prefer':'return=representation'}});
     }
-    const rows=await sbFetch(query,{headers:{'Prefer':'return=representation'}});
     _historyAllRows = rows || [];
     if(!rows||rows.length===0){tbody.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">No logs yet</div><div class="empty-state-sub">Submit your first daily log to see your history here.</div></div></td></tr>';return;}
     tbody.innerHTML=rows.map(r=>historyRowHtml(r,s)).join('');
