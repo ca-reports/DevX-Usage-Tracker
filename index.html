@@ -176,6 +176,13 @@ html[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator{f
 .field select option{background:var(--surface2);}
 .field textarea{resize:vertical;min-height:70px;}
 .field input[type="number"]{font-family:'Roboto',sans-serif;}
+/* Manual "Paste" button — workaround for browsers/policies that block Ctrl+V */
+.field-input-wrap{position:relative;}
+.field-input-wrap input,.field-input-wrap textarea{width:100%;box-sizing:border-box;padding-right:36px;}
+.paste-btn{position:absolute;top:50%;right:5px;transform:translateY(-50%);width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;line-height:1;padding:0;transition:all .15s;}
+.paste-btn:hover{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-dim);}
+.paste-btn.textarea-paste{top:10px;transform:none;}
+.paste-btn.pasted{border-color:var(--cyan);color:var(--cyan);}
 /* Calendar icon — white in dark mode, dark in light mode */
 .field input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(2);cursor:pointer;opacity:1;}
 /* Also cover inline date inputs in header bars */
@@ -1720,6 +1727,51 @@ function showPage(id,el){
 renderComparisonTableHead();
 document.getElementById('today-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'short',year:'numeric'});
  
+/* ── Manual "Paste" buttons ─────────────────────────────────────
+   Some browsers/corporate policies block Ctrl+V paste into web pages
+   ("blocked by the administrator"). This adds a small 📋 button next
+   to each field that reads the clipboard on a direct user click,
+   which is allowed even when keyboard-shortcut paste is restricted. */
+async function pasteIntoField(btn){
+  const input = btn.previousElementSibling;
+  if(!input) return;
+  try{
+    const text = await navigator.clipboard.readText();
+    if(text === '') return;
+    input.value = text;
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+    input.dispatchEvent(new Event('change',{bubbles:true}));
+    input.focus();
+    btn.classList.add('pasted');
+    setTimeout(()=>btn.classList.remove('pasted'),600);
+  }catch(err){
+    console.error('Clipboard read failed:',err);
+    alert('Could not read the clipboard automatically. Please allow clipboard access for this site when your browser prompts you, or click into the field and paste manually.');
+  }
+}
+
+function addPasteButton(inputEl){
+  if(!inputEl || inputEl.dataset.pasteWrapped) return;
+  inputEl.dataset.pasteWrapped = '1';
+  const wrap = document.createElement('div');
+  wrap.className = 'field-input-wrap';
+  inputEl.parentNode.insertBefore(wrap, inputEl);
+  wrap.appendChild(inputEl);
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'paste-btn' + (inputEl.tagName === 'TEXTAREA' ? ' textarea-paste' : '');
+  btn.title = 'Paste from clipboard';
+  btn.setAttribute('aria-label','Paste from clipboard');
+  btn.textContent = '📋';
+  btn.onclick = function(e){ e.preventDefault(); pasteIntoField(this); };
+  wrap.appendChild(btn);
+}
+
+function addPasteButtonsWithin(container){
+  container.querySelectorAll('input:not([type="date"]):not([type="hidden"]):not([readonly]), textarea')
+    .forEach(addPasteButton);
+}
+
 function addRecord(){
  
 const html = `
@@ -1890,6 +1942,7 @@ document
 
 // Wire up: when ticket status changes to Reopened/Blocked, mark Notes as required visually
 const newCard=document.getElementById("records-container").lastElementChild;
+addPasteButtonsWithin(newCard);
 const statusSelect=newCard.querySelector('.r-ticket-status');
 const notesStar=newCard.querySelector('.r-notes-star');
 statusSelect.addEventListener('change',()=>{
